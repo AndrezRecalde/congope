@@ -14,5 +14,23 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                if ($e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
+                    return \App\Helpers\ApiResponse::notFound();
+                }
+                if ($e instanceof \Illuminate\Auth\Access\AuthorizationException) {
+                    return \App\Helpers\ApiResponse::forbidden();
+                }
+                if ($e instanceof \Illuminate\Validation\ValidationException) {
+                    return \App\Helpers\ApiResponse::error($e->getMessage(), $e->errors());
+                }
+                if ($e instanceof \Illuminate\Auth\AuthenticationException) {
+                    return \App\Helpers\ApiResponse::error('Unauthenticated.', [], 401);
+                }
+                
+                $message = config('app.debug') ? $e->getMessage() : 'Error interno del servidor';
+                return \App\Helpers\ApiResponse::serverError($message);
+            }
+        });
     })->create();
