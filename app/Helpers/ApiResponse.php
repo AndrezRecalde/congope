@@ -51,4 +51,9 @@ class ApiResponse
     {
         return self::error($message, [], 500);
     }
+
+    public static function unauthorized($message = 'No autenticado')
+    {
+        return self::error($message, [], 401);
+    }
 }

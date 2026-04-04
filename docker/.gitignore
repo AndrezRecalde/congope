@@ -1,0 +1,16 @@
+# Variables de entorno con credenciales
+.env
+
+# Datos de PostgreSQL (volumen local si se usa bind mount)
+postgres/data/
+
+# Datos de pgAdmin
+pgadmin/data/
+
+# Backups locales
+backups/
+*.sql.gz
+*.dump
+
+# Logs
+*.log

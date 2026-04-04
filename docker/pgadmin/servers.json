@@ -1,0 +1,17 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "CONGOPE — PostgreSQL 17 (Local)",
+      "Group": "CONGOPE",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "congope_db",
+      "Username": "congope_user",
+      "SSLMode": "prefer",
+      "Comment": "Base de datos principal — Plataforma Cooperación Internacional CONGOPE",
+      "Shared": false,
+      "BGColor": "#1A3A5C",
+      "FGColor": "#ffffff"
+    }
+  }
+}

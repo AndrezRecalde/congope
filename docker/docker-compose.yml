@@ -1,0 +1,124 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# CONGOPE — Plataforma de Cooperación Internacional y Nacional
+# Stack de Base de Datos: PostgreSQL 17 + PostGIS 3.5 + pg_cron + pgAdmin 4
+# Versión 2 — Con imagen personalizada para pg_cron
+# ══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # PostgreSQL 17 + PostGIS 3.5 + pg_cron (imagen personalizada)
+  # ────────────────────────────────────────────────────────────────────────────
+  postgres:
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile
+    image: congope_postgres_custom:17-3.5
+    container_name: congope_postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-congope_db}
+      POSTGRES_USER:     ${POSTGRES_USER:-congope_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Congope@2025!}
+      PGDATA:            /var/lib/postgresql/data/pgdata
+
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+
+    networks:
+      - congope_network
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-congope_user} -d ${POSTGRES_DB:-congope_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+    shm_size: 256mb
+
+    command: >
+      postgres
+        -c shared_preload_libraries=pg_cron
+        -c cron.database_name=${POSTGRES_DB:-congope_db}
+        -c max_connections=200
+        -c shared_buffers=256MB
+        -c effective_cache_size=768MB
+        -c maintenance_work_mem=64MB
+        -c checkpoint_completion_target=0.9
+        -c wal_buffers=16MB
+        -c default_statistics_target=100
+        -c random_page_cost=1.1
+        -c effective_io_concurrency=200
+        -c work_mem=4MB
+        -c min_wal_size=1GB
+        -c max_wal_size=4GB
+        -c log_timezone=America/Guayaquil
+        -c datestyle=iso,mdy
+        -c timezone=America/Guayaquil
+        -c lc_messages=en_US.utf8
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # pgAdmin 4 — Interfaz web de administración
+  # ────────────────────────────────────────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: congope_pgadmin
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL:                ${PGADMIN_EMAIL:-admin@congope.gob.ec}
+      PGADMIN_DEFAULT_PASSWORD:             ${PGADMIN_PASSWORD:-Admin@2025!}
+      PGADMIN_CONFIG_SERVER_MODE:           "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "False"
+      PGADMIN_CONFIG_ALLOW_SAVE_PASSWORD:   "True"
+      GUNICORN_ACCESS_LOGFILE:              "/dev/null"
+
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      # pgpass eliminado — Windows tiene conflictos con permisos de este archivo
+      # La contraseña se guarda en pgAdmin al conectarse por primera vez
+
+    networks:
+      - congope_network
+
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "http://localhost:80/misc/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Volúmenes persistentes
+# ──────────────────────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+    name: congope_postgres_data
+    driver: local
+
+  pgadmin_data:
+    name: congope_pgadmin_data
+    driver: local
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Red interna del proyecto
+# ──────────────────────────────────────────────────────────────────────────────
+networks:
+  congope_network:
+    name: congope_network
+    driver: bridge

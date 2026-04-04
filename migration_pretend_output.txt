@@ -1,0 +1,121 @@
+﻿
+   INFO  Running migrations.  
+
+  0001_01_01_000000_create_users_table .............................................................................................................  
+  Γçé create table "users" ("id" bigserial not null primary key, "name" varchar(255) not null, "email" varchar(255) not null, "email_verified_at" timestamp(0) without time zone null, "password" varchar(255) not null, "remember_token" varchar(100) null, "created_at" timestamp(0) without time zone null, "updated_at" timestamp(0) without time zone null)  
+  Γçé alter table "users" add constraint "users_email_unique" unique ("email")  
+  Γçé create table "password_reset_tokens" ("email" varchar(255) not null, "token" varchar(255) not null, "created_at" timestamp(0) without time zone null)  
+  Γçé alter table "password_reset_tokens" add primary key ("email")  
+  Γçé create table "sessions" ("id" varchar(255) not null, "user_id" bigint null, "ip_address" varchar(45) null, "user_agent" text null, "payload" text not null, "last_activity" integer not null)  
+  Γçé alter table "sessions" add primary key ("id")  
+  Γçé create index "sessions_user_id_index" on "sessions" ("user_id")  
+  Γçé create index "sessions_last_activity_index" on "sessions" ("last_activity")  
+  0001_01_01_000001_create_cache_table .............................................................................................................  
+  Γçé create table "cache" ("key" varchar(255) not null, "value" text not null, "expiration" bigint not null)  
+  Γçé alter table "cache" add primary key ("key")  
+  Γçé create index "cache_expiration_index" on "cache" ("expiration")  
+  Γçé create table "cache_locks" ("key" varchar(255) not null, "owner" varchar(255) not null, "expiration" bigint not null)  
+  Γçé alter table "cache_locks" add primary key ("key")  
+  Γçé create index "cache_locks_expiration_index" on "cache_locks" ("expiration")  
+  0001_01_01_000002_create_jobs_table ..............................................................................................................  
+  Γçé create table "jobs" ("id" bigserial not null primary key, "queue" varchar(255) not null, "payload" text not null, "attempts" smallint not null, "reserved_at" integer null, "available_at" integer not null, "created_at" integer not null)  
+  Γçé create index "jobs_queue_index" on "jobs" ("queue")  
+  Γçé create table "job_batches" ("id" varchar(255) not null, "name" varchar(255) not null, "total_jobs" integer not null, "pending_jobs" integer not null, "failed_jobs" integer not null, "failed_job_ids" text not null, "options" text null, "cancelled_at" integer null, "created_at" integer not null, "finished_at" integer null)  
+  Γçé alter table "job_batches" add primary key ("id")  
+  Γçé create table "failed_jobs" ("id" bigserial not null primary key, "uuid" varchar(255) not null, "connection" text not null, "queue" text not null, "payload" text not null, "exception" text not null, "failed_at" timestamp(0) without time zone not null default CURRENT_TIMESTAMP)  
+  Γçé alter table "failed_jobs" add constraint "failed_jobs_uuid_unique" unique ("uuid")  
+  2026_04_03_172457_create_permission_tables .......................................................................................................  
+  Γçé create table "permissions" ("id" bigserial not null primary key, "name" varchar(255) not null, "guard_name" varchar(255) not null, "created_at" timestamp(0) without time zone null, "updated_at" timestamp(0) without time zone null)  
+  Γçé alter table "permissions" add constraint "permissions_name_guard_name_unique" unique ("name", "guard_name")  
+  Γçé create table "roles" ("id" bigserial not null primary key, "name" varchar(255) not null, "guard_name" varchar(255) not null, "created_at" timestamp(0) without time zone null, "updated_at" timestamp(0) without time zone null)  
+  Γçé alter table "roles" add constraint "roles_name_guard_name_unique" unique ("name", "guard_name")  
+  Γçé create table "model_has_permissions" ("permission_id" bigint not null, "model_type" varchar(255) not null, "model_id" bigint not null)  
+  Γçé create index "model_has_permissions_model_id_model_type_index" on "model_has_permissions" ("model_id", "model_type")  
+  Γçé alter table "model_has_permissions" add constraint "model_has_permissions_permission_id_foreign" foreign key ("permission_id") references "permissions" ("id") on delete cascade  
+  Γçé alter table "model_has_permissions" add primary key ("permission_id", "model_id", "model_type")  
+  Γçé create table "model_has_roles" ("role_id" bigint not null, "model_type" varchar(255) not null, "model_id" bigint not null)  
+  Γçé create index "model_has_roles_model_id_model_type_index" on "model_has_roles" ("model_id", "model_type")  
+  Γçé alter table "model_has_roles" add constraint "model_has_roles_role_id_foreign" foreign key ("role_id") references "roles" ("id") on delete cascade  
+  Γçé alter table "model_has_roles" add primary key ("role_id", "model_id", "model_type")  
+  Γçé create table "role_has_permissions" ("permission_id" bigint not null, "role_id" bigint not null)  
+  Γçé alter table "role_has_permissions" add constraint "role_has_permissions_permission_id_foreign" foreign key ("permission_id") references "permissions" ("id") on delete cascade  
+  Γçé alter table "role_has_permissions" add constraint "role_has_permissions_role_id_foreign" foreign key ("role_id") references "roles" ("id") on delete cascade  
+  Γçé alter table "role_has_permissions" add primary key ("permission_id", "role_id")  
+  Γçé delete from "cache" where "key" in ('laravel-cache-spatie.permission.cache', 'laravel-cache-illuminate:cache:flexible:created:spatie.permission.cache')  
+  2026_04_03_172457_create_personal_access_tokens_table ............................................................................................  
+  Γçé create table "personal_access_tokens" ("id" bigserial not null primary key, "tokenable_type" varchar(255) not null, "tokenable_id" bigint not null, "name" text not null, "token" varchar(64) not null, "abilities" text null, "last_used_at" timestamp(0) without time zone null, "expires_at" timestamp(0) without time zone null, "created_at" timestamp(0) without time zone null, "updated_at" timestamp(0) without time zone null)  
+  Γçé create index "personal_access_tokens_tokenable_type_tokenable_id_index" on "personal_access_tokens" ("tokenable_type", "tokenable_id")  
+  Γçé alter table "personal_access_tokens" add constraint "personal_access_tokens_token_unique" unique ("token")  
+  Γçé create index "personal_access_tokens_expires_at_index" on "personal_access_tokens" ("expires_at")  
+  2026_04_03_172458_create_telescope_entries_table .................................................................................................  
+  Γçé create table "telescope_entries" ("sequence" bigserial not null primary key, "uuid" uuid not null, "batch_id" uuid not null, "family_hash" varchar(255) null, "should_display_on_index" boolean not null default '1', "type" varchar(20) not null, "content" text not null, "created_at" timestamp(0) without time zone null)  
+  Γçé alter table "telescope_entries" add constraint "telescope_entries_uuid_unique" unique ("uuid")  
+  Γçé create index "telescope_entries_batch_id_index" on "telescope_entries" ("batch_id")  
+  Γçé create index "telescope_entries_family_hash_index" on "telescope_entries" ("family_hash")  
+  Γçé create index "telescope_entries_created_at_index" on "telescope_entries" ("created_at")  
+  Γçé create index "telescope_entries_type_should_display_on_index_index" on "telescope_entries" ("type", "should_display_on_index")  
+  Γçé create table "telescope_entries_tags" ("entry_uuid" uuid not null, "tag" varchar(255) not null)  
+  Γçé alter table "telescope_entries_tags" add primary key ("entry_uuid", "tag")  
+  Γçé create index "telescope_entries_tags_tag_index" on "telescope_entries_tags" ("tag")  
+  Γçé alter table "telescope_entries_tags" add constraint "telescope_entries_tags_entry_uuid_foreign" foreign key ("entry_uuid") references "telescope_entries" ("uuid") on delete cascade  
+  Γçé create table "telescope_monitoring" ("tag" varchar(255) not null)  
+  Γçé alter table "telescope_monitoring" add primary key ("tag")  
+  2026_04_03_202735_create_provincias_table ........................................................................................................  
+  Γçé create table "provincias" ("id" uuid not null, "nombre" varchar(150) not null, "codigo" varchar(10) not null, "capital" varchar(150) not null, "created_at" timestamp(0) without time zone null, "updated_at" timestamp(0) without time zone null)  
+  Γçé alter table "provincias" add primary key ("id")  
+  Γçé alter table "provincias" add constraint "provincias_codigo_unique" unique ("codigo")  
+  Γçé ALTER TABLE provincias ADD COLUMN geom geometry(MultiPolygon, 4326);  
+  Γçé CREATE INDEX idx_provincias_geom ON provincias USING GIST (geom);  
+  2026_04_03_202739_create_ods_table ...............................................................................................................  
+  Γçé create table "ods" ("id" integer not null, "numero" integer not null, "nombre" varchar(255) not null, "descripcion" text null, "color_hex" varchar(7) null, "icono_url" varchar(500) null)  
+  Γçé alter table "ods" add primary key ("id")  
+  Γçé alter table "ods" add constraint "ods_numero_unique" unique ("numero")  
+  2026_04_03_202739_create_usuario_provincia_table .................................................................................................  
+  Γçé create table "usuario_provincia" ("id" uuid not null, "user_id" uuid not null, "provincia_id" uuid not null, "created_at" timestamp(0) without time zone null, "updated_at" timestamp(0) without time zone null)  
+  Γçé alter table "usuario_provincia" add constraint "usuario_provincia_user_id_foreign" foreign key ("user_id") references "users" ("id") on delete cascade  
+  Γçé alter table "usuario_provincia" add constraint "usuario_provincia_provincia_id_foreign" foreign key ("provincia_id") references "provincias" ("id") on delete cascade  
+  Γçé alter table "usuario_provincia" add constraint "usuario_provincia_user_id_provincia_id_unique" unique ("user_id", "provincia_id")  
+  Γçé create index "usuario_provincia_user_id_index" on "usuario_provincia" ("user_id")  
+  Γçé create index "usuario_provincia_provincia_id_index" on "usuario_provincia" ("provincia_id")  
+  Γçé alter table "usuario_provincia" add primary key ("id")  
+  2026_04_03_220530_create_actor_area_tematica_table ...............................................................................................  
+  Γçé create table "actor_area_tematica" ("id" uuid not null, "actor_id" uuid not null, "area" varchar(150) not null)  
+  Γçé alter table "actor_area_tematica" add constraint "actor_area_tematica_actor_id_foreign" foreign key ("actor_id") references "actores_cooperacion" ("id") on delete cascade  
+  Γçé alter table "actor_area_tematica" add constraint "actor_area_tematica_actor_id_area_unique" unique ("actor_id", "area")  
+  Γçé alter table "actor_area_tematica" add primary key ("id")  
+  2026_04_03_220530_create_actores_cooperacion_table ...............................................................................................  
+  Γçé create table "actores_cooperacion" ("id" uuid not null, "nombre" varchar(255) not null, "tipo" varchar(255) check ("tipo" in ('ONG', 'Multilateral', 'Embajada', 'Bilateral', 'Privado', 'Academia')) not null, "pais_origen" varchar(100) not null, "estado" varchar(255) check ("estado" in ('Activo', 'Inactivo', 'Potencial')) not null default 'Activo', "contacto_nombre" varchar(200) null, "contacto_email" varchar(255) null, "contacto_telefono" varchar(50) null, "sitio_web" varchar(500) null, "notas" text null, "deleted_at" timestamp(0) without time zone null, "created_at" timestamp(0) without time zone null, "updated_at" timestamp(0) without time zone null)  
+  Γçé create index "actores_cooperacion_tipo_index" on "actores_cooperacion" ("tipo")  
+  Γçé create index "actores_cooperacion_estado_index" on "actores_cooperacion" ("estado")  
+  Γçé create index "actores_cooperacion_pais_origen_index" on "actores_cooperacion" ("pais_origen")  
+  Γçé alter table "actores_cooperacion" add primary key ("id")  
+  2026_04_03_220530_create_proyectos_table .........................................................................................................  
+  Γçé create table "proyectos" ("id" uuid not null, "codigo" varchar(50) not null, "nombre" varchar(500) not null, "actor_id" uuid not null, "estado" varchar(255) check ("estado" in ('En gesti├│n', 'En ejecuci├│n', 'Finalizado', 'Suspendido')) not null default 'En gesti├│n', "monto_total" decimal(15, 2) null, "moneda" varchar(3) not null default 'USD', "fecha_inicio" date null, "fecha_fin_planificada" date null, "fecha_fin_real" date null, "porcentaje_avance" smallint not null default '0', "beneficiarios_directos" integer null, "beneficiarios_indirectos" integer null, "sector_tematico" varchar(150) null, "creado_por" uuid null, "deleted_at" timestamp(0) without time zone null, "created_at" timestamp(0) without time zone null, "updated_at" timestamp(0) without time zone null)  
+  Γçé alter table "proyectos" add constraint "proyectos_actor_id_foreign" foreign key ("actor_id") references "actores_cooperacion" ("id") on delete restrict  
+  Γçé alter table "proyectos" add constraint "proyectos_creado_por_foreign" foreign key ("creado_por") references "users" ("id") on delete set null  
+  Γçé create index "proyectos_estado_index" on "proyectos" ("estado")  
+  Γçé create index "proyectos_actor_id_index" on "proyectos" ("actor_id")  
+  Γçé create index "proyectos_creado_por_index" on "proyectos" ("creado_por")  
+  Γçé create index "proyectos_fecha_inicio_index" on "proyectos" ("fecha_inicio")  
+  Γçé alter table "proyectos" add primary key ("id")  
+  Γçé alter table "proyectos" add constraint "proyectos_codigo_unique" unique ("codigo")  
+  Γçé ALTER TABLE proyectos ADD COLUMN ubicacion geometry(Point, 4326)  
+  Γçé CREATE INDEX idx_proyectos_ubicacion ON proyectos USING GIST (ubicacion)  
+  2026_04_03_220531_create_proyecto_ods_table ......................................................................................................  
+  Γçé create table "proyecto_ods" ("proyecto_id" uuid not null, "ods_id" bigint not null)  
+  Γçé alter table "proyecto_ods" add constraint "proyecto_ods_proyecto_id_foreign" foreign key ("proyecto_id") references "proyectos" ("id") on delete cascade  
+  Γçé alter table "proyecto_ods" add constraint "proyecto_ods_ods_id_foreign" foreign key ("ods_id") references "ods" ("id") on delete cascade  
+  Γçé alter table "proyecto_ods" add primary key ("proyecto_id", "ods_id")  
+  2026_04_03_220531_create_proyecto_provincia_table ................................................................................................  
+  Γçé create table "proyecto_provincia" ("proyecto_id" uuid not null, "provincia_id" uuid not null, "rol" varchar(255) check ("rol" in ('L├¡der', 'Co-ejecutora', 'Beneficiaria')) not null default 'Beneficiaria')  
+  Γçé alter table "proyecto_provincia" add constraint "proyecto_provincia_proyecto_id_foreign" foreign key ("proyecto_id") references "proyectos" ("id") on delete cascade  
+  Γçé alter table "proyecto_provincia" add constraint "proyecto_provincia_provincia_id_foreign" foreign key ("provincia_id") references "provincias" ("id") on delete cascade  
+  Γçé alter table "proyecto_provincia" add primary key ("proyecto_id", "provincia_id")  
+  2026_04_03_220532_create_hitos_proyecto_table ....................................................................................................  
+  Γçé create table "hitos_proyecto" ("id" uuid not null, "proyecto_id" uuid not null, "titulo" varchar(300) not null, "descripcion" text null, "fecha_limite" date not null, "completado" boolean not null default '0', "completado_en" date null, "created_at" timestamp(0) without time zone null, "updated_at" timestamp(0) without time zone null)  
+  Γçé alter table "hitos_proyecto" add constraint "hitos_proyecto_proyecto_id_foreign" foreign key ("proyecto_id") references "proyectos" ("id") on delete cascade  
+  Γçé create index "hitos_proyecto_proyecto_id_index" on "hitos_proyecto" ("proyecto_id")  
+  Γçé create index "hitos_proyecto_fecha_limite_index" on "hitos_proyecto" ("fecha_limite")  
+  Γçé create index "hitos_proyecto_completado_index" on "hitos_proyecto" ("completado")  
+  Γçé alter table "hitos_proyecto" add primary key ("id")  
+

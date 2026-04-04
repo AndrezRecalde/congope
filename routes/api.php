@@ -4,14 +4,122 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
 
-    // Rutas públicas (sin autenticación)
     Route::prefix('auth')->name('auth.')->group(function () {
-        // Placeholder: el agente de Auth completará estas rutas
+        Route::post('login', [\App\Http\Controllers\Api\V1\AuthController::class, 'login'])->name('login');
+        
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::post('logout', [\App\Http\Controllers\Api\V1\AuthController::class, 'logout'])->name('logout');
+            Route::get('me', [\App\Http\Controllers\Api\V1\AuthController::class, 'me'])->name('me');
+            Route::post('refresh', [\App\Http\Controllers\Api\V1\AuthController::class, 'refreshToken'])->name('refresh');
+        });
     });
 
-    // Rutas protegidas
+    // Portal público
+    Route::get('publico/emblematicos', [\App\Http\Controllers\Api\V1\ProyectoEmblematicoController::class, 'indexPublico'])->name('publico.emblematicos');
+
+    // Rutas protegidas genéricas
     Route::middleware('auth:sanctum')->group(function () {
-        // Placeholder: cada agente de módulo añadirá sus rutas
+        // Usuarios
+        Route::apiResource('usuarios', \App\Http\Controllers\Api\V1\UsuarioController::class);
+        Route::patch('usuarios/{usuario}/rol', [\App\Http\Controllers\Api\V1\UsuarioController::class, 'asignarRol'])->name('usuarios.rol');
+        Route::patch('usuarios/{usuario}/provincias', [\App\Http\Controllers\Api\V1\UsuarioController::class, 'asignarProvincias'])->name('usuarios.provincias');
+        Route::get('auditoria', [\App\Http\Controllers\Api\V1\UsuarioController::class, 'auditoria'])->name('auditoria.index');
+
+        // Provincias (catálogo, solo lectura + consultas)
+        Route::get('provincias', [\App\Http\Controllers\Api\V1\ProvinciaController::class, 'index'])->name('provincias.index');
+        Route::get('provincias/{provincia}', [\App\Http\Controllers\Api\V1\ProvinciaController::class, 'show'])->name('provincias.show');
+        Route::get('provincias/{provincia}/usuarios', [\App\Http\Controllers\Api\V1\ProvinciaController::class, 'usuariosAsignados'])->name('provincias.usuarios');
+
+        // ODS (catálogo, solo lectura)
+        Route::get('ods', [\App\Http\Controllers\Api\V1\OdsController::class, 'index'])->name('ods.index');
+        Route::get('ods/{od}', [\App\Http\Controllers\Api\V1\OdsController::class, 'show'])->name('ods.show');
+        Route::get('ods/{od}/proyectos', [\App\Http\Controllers\Api\V1\OdsController::class, 'proyectosPorOds'])->name('ods.proyectos');
+
+        // Actores de Cooperación
+        Route::get('actores/exportar', [\App\Http\Controllers\Api\V1\ActorCooperacionController::class, 'exportar'])->name('actores.exportar');
+        Route::apiResource('actores', \App\Http\Controllers\Api\V1\ActorCooperacionController::class);
+
+        // Proyectos
+        Route::get('proyectos/exportar', [\App\Http\Controllers\Api\V1\ProyectoController::class, 'exportar'])->name('proyectos.exportar');
+        Route::patch('proyectos/{proyecto}/estado', [\App\Http\Controllers\Api\V1\ProyectoController::class, 'cambiarEstado'])->name('proyectos.cambiar_estado');
+        Route::apiResource('proyectos', \App\Http\Controllers\Api\V1\ProyectoController::class);
+
+        // Hitos de Proyecto
+        Route::prefix('proyectos/{proyecto}')->group(function () {
+            Route::apiResource('hitos', \App\Http\Controllers\Api\V1\HitoProyectoController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::patch('hitos/{hito}/completar', [\App\Http\Controllers\Api\V1\HitoProyectoController::class, 'completar'])->name('hitos.completar');
+        });
+
+        // Buenas Prácticas
+        Route::get('buenas-practicas/exportar', [\App\Http\Controllers\Api\V1\BuenaPracticaController::class, 'exportar'])->name('buenas-practicas.exportar');
+        Route::apiResource('buenas-practicas', \App\Http\Controllers\Api\V1\BuenaPracticaController::class);
+        Route::patch('buenas-practicas/{buena_practica}/destacar', [\App\Http\Controllers\Api\V1\BuenaPracticaController::class, 'destacar'])->name('buenas-practicas.destacar');
+        
+        // Valoraciones (sub-recurso)
+        Route::prefix('buenas-practicas/{buena_practica}')->name('buenas-practicas.')->group(function () {
+            Route::post('valoraciones', [\App\Http\Controllers\Api\V1\ValoracionPracticaController::class, 'store'])->name('valoraciones.store');
+            Route::delete('valoraciones', [\App\Http\Controllers\Api\V1\ValoracionPracticaController::class, 'destroy'])->name('valoraciones.destroy');
+        });
+        // Redes
+        Route::apiResource('redes', \App\Http\Controllers\Api\V1\RedController::class)->parameters(['redes' => 'red']);
+        Route::post('redes/{red}/miembros', [\App\Http\Controllers\Api\V1\RedController::class, 'gestionarMiembros'])->name('redes.miembros');
+
+        // Proyectos Emblemáticos
+        Route::apiResource('emblematicos', \App\Http\Controllers\Api\V1\ProyectoEmblematicoController::class);
+        Route::patch('emblematicos/{emblematico}/publicar', [\App\Http\Controllers\Api\V1\ProyectoEmblematicoController::class, 'publicar'])
+            ->name('emblematicos.publicar');
+
+        Route::prefix('emblematicos/{emblematico}')->name('emblematicos.')->group(function () {
+            Route::apiResource('reconocimientos', \App\Http\Controllers\Api\V1\ReconocimientoController::class)
+                ->only(['index', 'store', 'update', 'destroy']);
+        });
+
+        // Documentos
+        Route::get('documentos', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'index'])->name('documentos.index');
+        Route::post('documentos', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'store'])->name('documentos.store');
+        Route::get('documentos/{documento}', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'show'])->name('documentos.show');
+        Route::put('documentos/{documento}', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'update'])->name('documentos.update');
+        Route::delete('documentos/{documento}', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'destroy'])->name('documentos.destroy');
+        Route::get('documentos/{documento}/descargar', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'descargar'])->name('documentos.descargar');
+        Route::patch('documentos/{documento}/publicar', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'publicar'])->name('documentos.publicar');
+
+        // Eventos
+        Route::apiResource('eventos', \App\Http\Controllers\Api\V1\EventoController::class);
+
+        Route::post('eventos/{evento}/participantes', [\App\Http\Controllers\Api\V1\EventoController::class, 'gestionarParticipantes'])
+            ->name('eventos.participantes');
+
+        // Compromisos como sub-recurso de eventos
+        Route::prefix('eventos/{evento}')->name('eventos.')->group(function () {
+            Route::get('compromisos', [\App\Http\Controllers\Api\V1\CompromisoEventoController::class, 'index'])
+                ->name('compromisos.index');
+            Route::post('compromisos', [\App\Http\Controllers\Api\V1\CompromisoEventoController::class, 'store'])
+                ->name('compromisos.store');
+            Route::patch('compromisos/{compromiso}/resolver', [\App\Http\Controllers\Api\V1\CompromisoEventoController::class, 'resolver'])
+                ->name('compromisos.resolver');
+        });
+
+        // Mis compromisos pendientes (para el dashboard)
+        Route::get('mis-compromisos-pendientes', [\App\Http\Controllers\Api\V1\CompromisoEventoController::class, 'misPendientes'])
+            ->name('compromisos.mis-pendientes');
+
+        // Dashboard
+        Route::prefix('dashboard')->name('dashboard.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\DashboardController::class, 'index'])->name('index');
+            Route::get('grafica-anual', [\App\Http\Controllers\Api\V1\DashboardController::class, 'graficaAnual'])->name('grafica-anual');
+            Route::get('grafica-ods', [\App\Http\Controllers\Api\V1\DashboardController::class, 'graficaOds'])->name('grafica-ods');
+        });
+
+        // Reportes
+        Route::prefix('reportes')->name('reportes.')->group(function () {
+            Route::get('provincia', [\App\Http\Controllers\Api\V1\ReporteController::class, 'provincia'])->name('provincia');
+            Route::get('ods', [\App\Http\Controllers\Api\V1\ReporteController::class, 'ods'])->name('ods');
+            Route::get('cooperante', [\App\Http\Controllers\Api\V1\ReporteController::class, 'cooperante'])->name('cooperante');
+            Route::get('anual', [\App\Http\Controllers\Api\V1\ReporteController::class, 'anual'])->name('anual');
+            Route::get('global', [\App\Http\Controllers\Api\V1\ReporteController::class, 'global'])->name('global');
+        });
+
     });
 
 });
+

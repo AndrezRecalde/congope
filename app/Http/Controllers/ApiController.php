@@ -36,4 +36,14 @@ class ApiController extends BaseController
     {
         return ApiResponse::success($data, $message, 201);
     }
+
+    protected function respondUnauthorized($message = 'No autenticado')
+    {
+        return ApiResponse::unauthorized($message);
+    }
+
+    protected function respondServerError($message = 'Error interno del servidor')
+    {
+        return ApiResponse::serverError($message);
+    }
 }
