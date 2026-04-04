@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\FiltroProvincia;
+use App\Traits\HasDocuments;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -18,7 +19,7 @@ class BuenaPractica extends BaseModel
             'es_destacada' => 'boolean',
         ];
     }
-    use SoftDeletes, FiltroProvincia;
+    use SoftDeletes, FiltroProvincia, HasDocuments;
 
     public function provincia()
     {

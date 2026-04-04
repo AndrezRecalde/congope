@@ -16,7 +16,8 @@ class BuenaPracticaController extends ApiController
 {
     public function __construct(
         protected BuenaPracticaService $service
-    ) {}
+    ) {
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -73,13 +74,14 @@ class BuenaPracticaController extends ApiController
         return $this->respondSuccess(new BuenaPracticaResource($practicaActualizada), $msg);
     }
 
+    //TODO: IMPLEMENTAR LA FUNCIONALIDAD DE EXPORTAR
     public function exportar(Request $request)
     {
         Gate::authorize('exportar', BuenaPractica::class);
 
         $formato = $request->get('formato', 'excel');
-        
-        return match($formato) {
+
+        return match ($formato) {
             'pdf' => $this->service->exportarPdf($request->all()),
             default => $this->service->exportarExcel($request->all()),
         };

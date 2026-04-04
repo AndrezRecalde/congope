@@ -52,7 +52,7 @@ Route::prefix('v1')->group(function () {
 
         // Buenas Prácticas
         Route::get('buenas-practicas/exportar', [\App\Http\Controllers\Api\V1\BuenaPracticaController::class, 'exportar'])->name('buenas-practicas.exportar');
-        Route::apiResource('buenas-practicas', \App\Http\Controllers\Api\V1\BuenaPracticaController::class);
+        Route::apiResource('buenas-practicas', \App\Http\Controllers\Api\V1\BuenaPracticaController::class)->parameters(['buenas-practicas' => 'buena_practica']);
         Route::patch('buenas-practicas/{buena_practica}/destacar', [\App\Http\Controllers\Api\V1\BuenaPracticaController::class, 'destacar'])->name('buenas-practicas.destacar');
         
         // Valoraciones (sub-recurso)

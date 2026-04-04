@@ -23,7 +23,7 @@ class StoreCompromisoRequest extends FormRequest
     {
         return [
             'descripcion' => 'required|string|max:500',
-            'responsable_id' => 'required|uuid|exists:users,id',
+            'responsable_id' => 'required|integer|exists:users,id',
             'fecha_limite' => 'required|date|after:today',
         ];
     }
@@ -39,7 +39,7 @@ class StoreCompromisoRequest extends FormRequest
             'descripcion.required' => 'La descripción es obligatoria.',
             'descripcion.max' => 'La descripción no puede superar los 500 caracteres.',
             'responsable_id.required' => 'El responsable es obligatorio.',
-            'responsable_id.uuid' => 'El identificador del responsable no es válido.',
+            'responsable_id.integer' => 'El identificador del responsable no es válido.',
             'responsable_id.exists' => 'El responsable especificado no existe.',
             'fecha_limite.required' => 'La fecha límite es obligatoria.',
             'fecha_limite.date' => 'La fecha límite no tiene un formato válido.',

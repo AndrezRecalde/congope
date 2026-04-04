@@ -33,11 +33,11 @@ class CompromisoEventoService
         return CompromisoEvento::create($datos);
     }
 
-    public function resolver(CompromisoEvento $compromiso): CompromisoEvento
+    public function resolver(CompromisoEvento $compromiso, bool $estado = true): CompromisoEvento
     {
         $compromiso->update([
-            'resuelto'    => true,
-            'resuelto_en' => today(),
+            'resuelto'    => $estado,
+            'resuelto_en' => $estado ? today() : null,
         ]);
         
         return $compromiso->fresh();

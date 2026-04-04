@@ -53,15 +53,18 @@ class CompromisoEventoController extends ApiController
     /**
      * Mark the commitment as resolved.
      */
-    public function resolver(Evento $evento, CompromisoEvento $compromiso): JsonResponse
+    public function resolver(Request $request, Evento $evento, CompromisoEvento $compromiso): JsonResponse
     {
         $this->authorize('resolver', $compromiso);
 
-        $compromiso = $this->compromisoService->resolver($compromiso);
+        $estado = $request->boolean('resuelto', true);
+        $compromiso = $this->compromisoService->resolver($compromiso, $estado);
+
+        $msg = $estado ? 'Compromiso marcado como resuelto' : 'Compromiso devuelto a pendiente';
 
         return $this->respondSuccess(
             new CompromisoResource($compromiso),
-            'Compromiso marcado como resuelto'
+            $msg
         );
     }
 

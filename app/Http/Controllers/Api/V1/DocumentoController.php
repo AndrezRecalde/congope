@@ -10,6 +10,7 @@ use App\Models\Documento;
 use App\Services\DocumentoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class DocumentoController extends ApiController
 {
@@ -57,7 +58,7 @@ class DocumentoController extends ApiController
 
     public function show(Documento $documento): JsonResponse
     {
-        $this->authorize('view', $documento);
+        Gate::authorize('view', $documento);
 
         return $this->respondSuccess(
             new DocumentoResource($documento),
@@ -67,7 +68,7 @@ class DocumentoController extends ApiController
 
     public function update(UpdateDocumentoRequest $request, Documento $documento): JsonResponse
     {
-        $this->authorize('update', $documento);
+        Gate::authorize('update', $documento);
 
         $doc = $this->service->actualizar($documento, $request->validated());
 
@@ -79,7 +80,7 @@ class DocumentoController extends ApiController
 
     public function destroy(Documento $documento): JsonResponse
     {
-        $this->authorize('delete', $documento);
+        Gate::authorize('delete', $documento);
 
         $this->service->eliminar($documento);
 
@@ -88,14 +89,14 @@ class DocumentoController extends ApiController
 
     public function descargar(Documento $documento)
     {
-        $this->authorize('descargar', $documento);
+        Gate::authorize('descargar', $documento);
 
         return $this->service->descargar($documento, auth()->user());
     }
 
     public function publicar(Request $request, Documento $documento): JsonResponse
     {
-        $this->authorize('publicar', $documento);
+        Gate::authorize('publicar', $documento);
 
         $estado = $request->boolean('es_publico', true);
         

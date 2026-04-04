@@ -30,8 +30,7 @@ class EventoController extends ApiController
 
         $eventos = $this->eventoService->listar($request->all());
 
-        return $this->respondWithPagination(
-            $eventos,
+        return $this->respondPaginated(
             EventoResource::collection($eventos),
             'Eventos obtenidos exitosamente'
         );

@@ -25,7 +25,7 @@ class ReporteService
         }
 
         $export = new GenericExport($datosExcel, $cabecerasExcel);
-        
+
         if ($formato === 'csv') {
             return Excel::download($export, "{$nombreArchivo}.csv", \Maatwebsite\Excel\Excel::CSV);
         }
@@ -36,8 +36,8 @@ class ReporteService
     public function reporteProvincia(string $provinciaId, string $formato)
     {
         $provincia = Provincia::findOrFail($provinciaId);
-        
-        $proyectos = Proyecto::whereHas('provincias', function($q) use ($provinciaId) {
+
+        $proyectos = Proyecto::whereHas('provincias', function ($q) use ($provinciaId) {
             $q->where('provincias.id', $provinciaId);
         })->get();
 
@@ -56,12 +56,12 @@ class ReporteService
         // Mapeo para el Excel
         $datosExcel = $proyectos->map(function ($proyecto) {
             return [
-                'Código' => $proyecto->codigo_proyecto,
+                'Código' => $proyecto->codigo,
                 'Nombre' => $proyecto->nombre,
                 'Estado' => $proyecto->estado,
                 'Monto Total' => $proyecto->monto_total,
                 'Fecha Inicio' => $proyecto->fecha_inicio ? $proyecto->fecha_inicio->format('Y-m-d') : 'N/A',
-                'Fecha Fin' => $proyecto->fecha_fin ? $proyecto->fecha_fin->format('Y-m-d') : 'N/A',
+                'Fecha Fin' => $proyecto->fecha_fin_real ? $proyecto->fecha_fin_real->format('Y-m-d') : 'N/A',
             ];
         })->toArray();
 
@@ -74,7 +74,7 @@ class ReporteService
     {
         $ods = Ods::findOrFail($odsId);
 
-        $proyectos = Proyecto::whereHas('ods', function($q) use ($odsId) {
+        $proyectos = Proyecto::whereHas('ods', function ($q) use ($odsId) {
             $q->where('ods.id', $odsId);
         })->get();
 
@@ -88,7 +88,7 @@ class ReporteService
 
         $datosExcel = $proyectos->map(function ($proyecto) {
             return [
-                'Código' => $proyecto->codigo_proyecto,
+                'Código' => $proyecto->codigo,
                 'Nombre' => $proyecto->nombre,
                 'Estado' => $proyecto->estado,
                 'Monto Total' => $proyecto->monto_total,
@@ -104,9 +104,7 @@ class ReporteService
     {
         $actor = ActorCooperacion::findOrFail($actorId);
 
-        $proyectos = Proyecto::whereHas('actores', function ($q) use ($actorId) {
-            $q->where('actores_cooperacion.id', $actorId);
-        })->get();
+        $proyectos = Proyecto::where('actor_id', $actorId)->get();
 
         $datosVista = [
             'actor' => $actor,
@@ -115,7 +113,7 @@ class ReporteService
 
         $datosExcel = $proyectos->map(function ($proyecto) {
             return [
-                'Código' => $proyecto->codigo_proyecto,
+                'Código' => $proyecto->codigo,
                 'Nombre' => $proyecto->nombre,
                 'Estado' => $proyecto->estado,
                 'Monto Total' => $proyecto->monto_total,
@@ -132,10 +130,10 @@ class ReporteService
         $proyectos = Proyecto::whereYear('fecha_inicio', $anio)->get();
 
         $iniciados = $proyectos->count();
-        $finalizados = Proyecto::whereYear('fecha_fin', $anio)
+        $finalizados = Proyecto::whereYear('fecha_fin_real', $anio)
             ->where('estado', 'Finalizado')
             ->count();
-        
+
         $montoTotal = $proyectos->sum('monto_total');
 
         $datosVista = [
@@ -148,7 +146,7 @@ class ReporteService
 
         $datosExcel = $proyectos->map(function ($proyecto) {
             return [
-                'Código' => $proyecto->codigo_proyecto,
+                'Código' => $proyecto->codigo,
                 'Nombre' => $proyecto->nombre,
                 'Estado' => $proyecto->estado,
                 'Monto Total' => $proyecto->monto_total,
@@ -176,9 +174,7 @@ class ReporteService
         }
 
         if (!empty($filtros['actor_id'])) {
-            $query->whereHas('actores', function ($q) use ($filtros) {
-                $q->where('actores_cooperacion.id', $filtros['actor_id']);
-            });
+            $query->where('actor_id', $filtros['actor_id']);
         }
 
         if (!empty($filtros['ods_id'])) {
@@ -204,12 +200,12 @@ class ReporteService
 
         $datosExcel = $proyectos->map(function ($proyecto) {
             return [
-                'Código' => $proyecto->codigo_proyecto,
+                'Código' => $proyecto->codigo,
                 'Nombre' => $proyecto->nombre,
                 'Estado' => $proyecto->estado,
                 'Monto Total' => $proyecto->monto_total,
                 'Fecha Inicio' => $proyecto->fecha_inicio ? $proyecto->fecha_inicio->format('Y-m-d') : 'N/A',
-                'Fecha Fin' => $proyecto->fecha_fin ? $proyecto->fecha_fin->format('Y-m-d') : 'N/A',
+                'Fecha Fin' => $proyecto->fecha_fin_real ? $proyecto->fecha_fin_real->format('Y-m-d') : 'N/A',
             ];
         })->toArray();
 

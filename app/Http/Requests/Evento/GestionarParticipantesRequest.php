@@ -24,8 +24,8 @@ class GestionarParticipantesRequest extends FormRequest
         return [
             'accion' => 'required|in:agregar,eliminar,marcar_asistencia',
             'user_ids' => 'required_if:accion,agregar|required_if:accion,eliminar|array',
-            'user_ids.*' => 'uuid|exists:users,id',
-            'user_id' => 'required_if:accion,marcar_asistencia|uuid|exists:users,id',
+            'user_ids.*' => 'integer|exists:users,id',
+            'user_id' => 'required_if:accion,marcar_asistencia|integer|exists:users,id',
             'asistio' => 'required_if:accion,marcar_asistencia|boolean',
         ];
     }
@@ -42,10 +42,10 @@ class GestionarParticipantesRequest extends FormRequest
             'accion.in' => 'La acción seleccionada no es válida.',
             'user_ids.required_if' => 'Debe proporcionar al menos un usuario para agregar o eliminar.',
             'user_ids.array' => 'Los usuarios deben ser una lista válida.',
-            'user_ids.*.uuid' => 'El identificador del usuario no es válido.',
+            'user_ids.*.integer' => 'El identificador del usuario no es válido.',
             'user_ids.*.exists' => 'El usuario especificado no existe.',
             'user_id.required_if' => 'El usuario es obligatorio para marcar asistencia.',
-            'user_id.uuid' => 'El identificador del usuario no es válido.',
+            'user_id.integer' => 'El identificador del usuario no es válido.',
             'user_id.exists' => 'El usuario especificado no existe.',
             'asistio.required_if' => 'Debe indicar si el usuario asistió o no.',
             'asistio.boolean' => 'El valor de asistencia debe ser verdadero o falso.',

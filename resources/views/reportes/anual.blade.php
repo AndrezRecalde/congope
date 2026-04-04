@@ -33,7 +33,7 @@
         <tbody>
             @foreach($proyectos as $proyecto)
             <tr>
-                <td>{{ $proyecto->codigo_proyecto }}</td>
+                <td>{{ $proyecto->codigo }}</td>
                 <td>{{ $proyecto->nombre }}</td>
                 <td>{{ $proyecto->estado }}</td>
                 <td>${{ number_format($proyecto->monto_total, 2) }}</td>

@@ -18,8 +18,7 @@ class ActorResumenResource extends JsonResource
             'id' => $this->id,
             'nombre' => $this->nombre,
             'tipo' => $this->tipo,
-            'pais' => $this->pais,
-            'nivel_impacto' => $this->nivel_impacto,
+            'pais' => $this->pais_origen,
         ];
     }
 }
