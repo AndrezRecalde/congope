@@ -89,6 +89,12 @@ class EventoService
                             $userId => ['confirmado_en' => now()]
                         ]);
                     }
+
+                    $usuarios = User::whereIn('id', $datos['user_ids'])->get();
+                    foreach ($usuarios as $usuario) {
+                        /** @var \App\Models\User $usuario */
+                        $usuario->notify(new \App\Notifications\InvitacionEventoNotification($evento));
+                    }
                     break;
                     
                 case 'eliminar':

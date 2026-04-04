@@ -30,7 +30,14 @@ class CompromisoEventoService
     public function crear(Evento $evento, array $datos): CompromisoEvento
     {
         $datos['evento_id'] = $evento->id;
-        return CompromisoEvento::create($datos);
+        $compromiso = CompromisoEvento::create($datos);
+
+        $responsable = User::find($datos['responsable_id']);
+        if ($responsable) {
+            $responsable->notify(new \App\Notifications\NuevoCompromisoNotification($compromiso));
+        }
+
+        return $compromiso;
     }
 
     public function resolver(CompromisoEvento $compromiso, bool $estado = true): CompromisoEvento
