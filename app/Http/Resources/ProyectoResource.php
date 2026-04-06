@@ -13,25 +13,54 @@ class ProyectoResource extends JsonResource
             'id' => $this->id,
             'codigo' => $this->codigo,
             'nombre' => $this->nombre,
+            'descripcion' => $this->descripcion,
             'estado' => $this->estado,
+            'color_marcador' => match ($this->estado) {
+                'En ejecución' => '#10B981', // Verde
+                'En gestión' => '#F59E0B',   // Amarillo/Ámbar
+                'Suspendido' => '#EF4444',   // Rojo
+                'Finalizado' => '#0F52BA',   // Azul
+                default => '#9CA3AF'
+            },
             'monto_total' => $this->monto_total,
             'monto_formateado' => $this->monto_formateado,
             'moneda' => $this->moneda,
             'fecha_inicio' => $this->fecha_inicio ? $this->fecha_inicio->format('Y-m-d') : null,
             'fecha_fin_planificada' => $this->fecha_fin_planificada ? $this->fecha_fin_planificada->format('Y-m-d') : null,
             'fecha_fin_real' => $this->fecha_fin_real ? $this->fecha_fin_real->format('Y-m-d') : null,
-            'porcentaje_avance' => $this->porcentaje_avance,
-            'beneficiarios_directos' => $this->beneficiarios_directos,
-            'beneficiarios_indirectos' => $this->beneficiarios_indirectos,
             'sector_tematico' => $this->sector_tematico,
-            'ubicacion' => $this->ubicacion,
-            
+            'flujo_direccion' => $this->flujo_direccion,
+            'modalidad_cooperacion' => $this->modalidad_cooperacion,
+
             'actor' => new ActorCooperacionResource($this->whenLoaded('actor')),
             'provincias' => $this->whenLoaded('provincias', function () {
                 return $this->provincias->map(function ($prov) {
                     return [
                         'id' => $prov->id,
                         'nombre' => $prov->nombre,
+                        'rol' => $prov->pivot->rol ?? null,
+                        'porcentaje_avance' => $prov->pivot->porcentaje_avance ?? null,
+                        'beneficiarios_directos' => $prov->pivot->beneficiarios_directos ?? null,
+                        'beneficiarios_indirectos' => $prov->pivot->beneficiarios_indirectos ?? null,
+                    ];
+                });
+            }),
+            'cantones' => $this->whenLoaded('cantones', function () {
+                return $this->cantones->map(function ($c) {
+                    return ['id' => $c->id, 'nombre' => $c->nombre];
+                });
+            }),
+            'parroquias' => $this->whenLoaded('parroquias', function () {
+                return $this->parroquias->map(function ($p) {
+                    return ['id' => $p->id, 'nombre' => $p->nombre];
+                });
+            }),
+            'ubicaciones' => $this->whenLoaded('ubicaciones', function () {
+                return $this->ubicaciones->map(function ($u) {
+                    return [
+                        'id' => $u->id,
+                        'nombre' => $u->nombre,
+                        'coordenadas' => $u->coordenadas,
                     ];
                 });
             }),

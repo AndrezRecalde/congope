@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('documentable_type', 100);
             $table->uuid('documentable_id');
             $table->string('titulo', 300);
-            $table->enum('categoria', ['Convenio', 'Informe', 'Acta', 'Anexo', 'Normativa', 'Comunicación']);
+            $table->enum('categoria', ['Convenio', 'Informe', 'Acta', 'Anexo', 'Normativa', 'Comunicación', 'Fotografía']);
+            $table->foreignUuid('provincia_id')->nullable()->constrained('provincias')->nullOnDelete();
             $table->string('ruta_archivo', 1000);
             $table->string('nombre_archivo', 300);
             $table->string('mime_type', 100)->nullable();

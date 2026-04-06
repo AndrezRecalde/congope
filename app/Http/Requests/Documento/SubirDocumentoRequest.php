@@ -25,10 +25,11 @@ class SubirDocumentoRequest extends FormRequest
             'entidad_tipo'      => 'required|in:proyecto,actor,red,evento',
             'entidad_id'        => 'required|uuid',
             'titulo'            => 'required|string|max:300',
-            'categoria'         => 'required|in:Convenio,Informe,Acta,Anexo,Normativa,Comunicación',
+            'categoria'         => 'required|string|in:Convenio,Informe,Acta,Anexo,Normativa,Comunicación,Fotografía',
             'archivo'           => 'required|file|max:20480|mimes:pdf,docx,xlsx,doc,xls,pptx,ppt,jpg,jpeg,png,zip',
             'es_publico'        => 'sometimes|boolean',
-            'fecha_vencimiento' => 'nullable|date|after:today',
+            'fecha_vencimiento' => 'nullable|date|after_or_equal:today',
+            'provincia_id'      => 'nullable|uuid|exists:provincias,id',
         ];
     }
 

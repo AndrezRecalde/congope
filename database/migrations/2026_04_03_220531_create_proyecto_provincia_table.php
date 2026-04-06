@@ -15,6 +15,9 @@ return new class extends Migration
             $table->foreignUuid('proyecto_id')->constrained('proyectos')->cascadeOnDelete();
             $table->foreignUuid('provincia_id')->constrained('provincias')->cascadeOnDelete();
             $table->enum('rol', ['Líder', 'Co-ejecutora', 'Beneficiaria'])->default('Beneficiaria');
+            $table->unsignedTinyInteger('porcentaje_avance')->default(0);
+            $table->unsignedInteger('beneficiarios_directos')->nullable();
+            $table->unsignedInteger('beneficiarios_indirectos')->nullable();
 
             $table->primary(['proyecto_id', 'provincia_id']);
         });

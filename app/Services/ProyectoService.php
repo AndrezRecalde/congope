@@ -41,7 +41,7 @@ class ProyectoService
 
     public function obtener(string $id, $usuario): Proyecto
     {
-        $query = Proyecto::with(['provincias', 'ods', 'actor', 'hitos', 'documentos']);
+        $query = Proyecto::with(['provincias', 'cantones', 'parroquias', 'ubicaciones', 'ods', 'actor', 'hitos', 'documentos']);
         
         if (!$usuario->can('proyectos.ver_todas_provincias')) {
             $provinciaIds = $usuario->provincias()->pluck('provincias.id');
@@ -64,8 +64,35 @@ class ProyectoService
             
             $proyecto = Proyecto::create($datos);
 
-            if (!empty($datos['provincia_ids'])) {
-                $proyecto->provincias()->sync($datos['provincia_ids']);
+            if (isset($datos['provincias'])) {
+                $syncData = [];
+                foreach ($datos['provincias'] as $provincia) {
+                    $syncData[$provincia['id']] = [
+                        'rol' => $provincia['rol'] ?? 'Beneficiaria',
+                        'porcentaje_avance' => $provincia['porcentaje_avance'] ?? 0,
+                        'beneficiarios_directos' => $provincia['beneficiarios_directos'] ?? null,
+                        'beneficiarios_indirectos' => $provincia['beneficiarios_indirectos'] ?? null,
+                    ];
+                }
+                $proyecto->provincias()->sync($syncData);
+            }
+
+            if (isset($datos['canton_ids'])) {
+                $proyecto->cantones()->sync($datos['canton_ids']);
+            }
+
+            if (isset($datos['parroquia_ids'])) {
+                $proyecto->parroquias()->sync($datos['parroquia_ids']);
+            }
+
+            if (isset($datos['ubicaciones'])) {
+                foreach($datos['ubicaciones'] as $ubicacion) {
+                    $ub = \App\Models\ProyectoUbicacion::create([
+                        'proyecto_id' => $proyecto->id,
+                        'nombre' => $ubicacion['nombre'] ?? null,
+                    ]);
+                    DB::statement("UPDATE proyecto_ubicaciones SET ubicacion = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?", [$ubicacion['lng'], $ubicacion['lat'], $ub->id]);
+                }
             }
 
             if (!empty($datos['ods_ids'])) {
@@ -81,8 +108,36 @@ class ProyectoService
         return DB::transaction(function () use ($proyecto, $datos) {
             $proyecto->update($datos);
 
-            if (isset($datos['provincia_ids'])) {
-                $proyecto->provincias()->sync($datos['provincia_ids']);
+            if (isset($datos['provincias'])) {
+                $syncData = [];
+                foreach ($datos['provincias'] as $provincia) {
+                    $syncData[$provincia['id']] = [
+                        'rol' => $provincia['rol'] ?? 'Beneficiaria',
+                        'porcentaje_avance' => $provincia['porcentaje_avance'] ?? 0,
+                        'beneficiarios_directos' => $provincia['beneficiarios_directos'] ?? null,
+                        'beneficiarios_indirectos' => $provincia['beneficiarios_indirectos'] ?? null,
+                    ];
+                }
+                $proyecto->provincias()->sync($syncData);
+            }
+
+            if (isset($datos['canton_ids'])) {
+                $proyecto->cantones()->sync($datos['canton_ids']);
+            }
+
+            if (isset($datos['parroquia_ids'])) {
+                $proyecto->parroquias()->sync($datos['parroquia_ids']);
+            }
+
+            if (isset($datos['ubicaciones'])) {
+                $proyecto->ubicaciones()->delete();
+                foreach($datos['ubicaciones'] as $ubicacion) {
+                    $ub = \App\Models\ProyectoUbicacion::create([
+                        'proyecto_id' => $proyecto->id,
+                        'nombre' => $ubicacion['nombre'] ?? null,
+                    ]);
+                    DB::statement("UPDATE proyecto_ubicaciones SET ubicacion = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?", [$ubicacion['lng'], $ubicacion['lat'], $ub->id]);
+                }
             }
 
             if (isset($datos['ods_ids'])) {

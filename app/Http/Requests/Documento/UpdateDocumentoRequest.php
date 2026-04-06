@@ -22,10 +22,11 @@ class UpdateDocumentoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'titulo'            => 'sometimes|string|max:300',
-            'categoria'         => 'sometimes|in:Convenio,Informe,Acta,Anexo,Normativa,Comunicación',
-            'es_publico'        => 'sometimes|boolean',
-            'fecha_vencimiento' => 'nullable|date',
+            'titulo'            => 'sometimes|required|string|max:300',
+            'categoria'         => 'sometimes|required|string|in:Convenio,Informe,Acta,Anexo,Normativa,Comunicación,Fotografía',
+            'es_publico'        => 'nullable|boolean',
+            'fecha_vencimiento' => 'nullable|date|after_or_equal:today',
+            'provincia_id'      => 'nullable|uuid|exists:provincias,id',
         ];
     }
 

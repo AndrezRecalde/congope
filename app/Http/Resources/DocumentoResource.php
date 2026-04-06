@@ -26,6 +26,10 @@ class DocumentoResource extends JsonResource
             'tamano_legible' => $this->formatBytes($this->tamano_bytes),
             'es_publico' => $this->es_publico,
             'fecha_vencimiento' => $this->fecha_vencimiento ? $this->fecha_vencimiento->format('Y-m-d') : null,
+            'provincia' => $this->whenLoaded('provincia', function() {
+                return ['id' => $this->provincia->id, 'nombre' => $this->provincia->nombre];
+            }),
+            'provincia_id' => $this->provincia_id,
             'version' => $this->version,
             'subido_por' => new UserResumenResource($this->whenLoaded('subidoPor')),
             'dias_para_vencer' => $diasVencimiento !== null && $diasVencimiento > 0 ? (int)$diasVencimiento : 0,

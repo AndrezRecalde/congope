@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 
 #[Table('documentos')]
-#[Fillable('documentable_type', 'documentable_id', 'titulo', 'categoria', 'ruta_archivo', 'nombre_archivo', 'mime_type', 'tamano_bytes', 'version', 'es_publico', 'fecha_vencimiento', 'subido_por')]
+#[Fillable('documentable_type', 'documentable_id', 'titulo', 'categoria', 'ruta_archivo', 'nombre_archivo', 'mime_type', 'tamano_bytes', 'version', 'es_publico', 'fecha_vencimiento', 'subido_por', 'provincia_id')]
 class Documento extends BaseModel
 {
     protected function casts(): array
@@ -29,6 +29,11 @@ class Documento extends BaseModel
     public function subidoPor()
     {
         return $this->belongsTo(User::class, 'subido_por');
+    }
+
+    public function provincia()
+    {
+        return $this->belongsTo(Provincia::class, 'provincia_id');
     }
 
     public function scopePublicos($query)

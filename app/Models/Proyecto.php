@@ -9,17 +9,17 @@ use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 
 #[Table('proyectos')]
-#[Fillable('codigo', 'nombre', 'actor_id', 'estado', 'monto_total', 'moneda', 'fecha_inicio', 'fecha_fin_planificada', 'fecha_fin_real', 'porcentaje_avance', 'beneficiarios_directos', 'beneficiarios_indirectos', 'sector_tematico', 'ubicacion', 'creado_por')]
+#[Fillable('codigo', 'nombre', 'descripcion', 'actor_id', 'estado', 'monto_total', 'moneda', 'fecha_inicio', 'fecha_fin_planificada', 'fecha_fin_real', 'sector_tematico', 'flujo_direccion', 'modalidad_cooperacion', 'creado_por')]
 class Proyecto extends BaseModel
 {
     protected function casts(): array
     {
         return [
             'monto_total' => 'decimal:2',
-            'porcentaje_avance' => 'integer',
             'fecha_inicio' => 'date',
             'fecha_fin_planificada' => 'date',
             'fecha_fin_real' => 'date',
+            'modalidad_cooperacion' => 'array',
         ];
     }
     use SoftDeletes, HasDocuments, FiltroProvincia;
@@ -31,7 +31,23 @@ class Proyecto extends BaseModel
 
     public function provincias()
     {
-        return $this->belongsToMany(Provincia::class, 'proyecto_provincia')->withPivot(['rol']);
+        return $this->belongsToMany(Provincia::class, 'proyecto_provincia')
+            ->withPivot(['rol', 'porcentaje_avance', 'beneficiarios_directos', 'beneficiarios_indirectos']);
+    }
+
+    public function cantones()
+    {
+        return $this->belongsToMany(Canton::class, 'proyecto_canton');
+    }
+
+    public function parroquias()
+    {
+        return $this->belongsToMany(Parroquia::class, 'proyecto_parroquia');
+    }
+
+    public function ubicaciones()
+    {
+        return $this->hasMany(ProyectoUbicacion::class);
     }
 
     public function ods()
