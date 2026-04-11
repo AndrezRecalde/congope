@@ -30,6 +30,10 @@ Route::prefix('v1')->group(function () {
         Route::get('provincias/{provincia}', [\App\Http\Controllers\Api\V1\ProvinciaController::class, 'show'])->name('provincias.show');
         Route::get('provincias/{provincia}/usuarios', [\App\Http\Controllers\Api\V1\ProvinciaController::class, 'usuariosAsignados'])->name('provincias.usuarios');
 
+        // Cantones y Parroquias
+        Route::apiResource('cantones', \App\Http\Controllers\Api\V1\CantonController::class)->parameters(['cantones' => 'cantone']);
+        Route::apiResource('parroquias', \App\Http\Controllers\Api\V1\ParroquiaController::class);
+
         // ODS (catálogo, solo lectura)
         Route::get('ods', [\App\Http\Controllers\Api\V1\OdsController::class, 'index'])->name('ods.index');
         Route::get('ods/{od}', [\App\Http\Controllers\Api\V1\OdsController::class, 'show'])->name('ods.show');

@@ -11,6 +11,11 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends ApiController
 {
+    /**
+     * Iniciar Sesión
+     * 
+     * @unauthenticated
+     */
     public function login(Request $request): JsonResponse
     {
         $request->validate([
