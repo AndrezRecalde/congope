@@ -124,11 +124,11 @@ Route::prefix('v1')->group(function () {
 
         // Reportes
         Route::prefix('reportes')->name('reportes.')->group(function () {
-            Route::get('provincia', [\App\Http\Controllers\Api\V1\ReporteController::class, 'provincia'])->name('provincia');
-            Route::get('ods', [\App\Http\Controllers\Api\V1\ReporteController::class, 'ods'])->name('ods');
-            Route::get('cooperante', [\App\Http\Controllers\Api\V1\ReporteController::class, 'cooperante'])->name('cooperante');
-            Route::get('anual', [\App\Http\Controllers\Api\V1\ReporteController::class, 'anual'])->name('anual');
-            Route::get('global', [\App\Http\Controllers\Api\V1\ReporteController::class, 'global'])->name('global');
+            Route::post('provincia', [\App\Http\Controllers\Api\V1\ReporteController::class, 'provincia'])->name('provincia');
+            Route::post('ods', [\App\Http\Controllers\Api\V1\ReporteController::class, 'ods'])->name('ods');
+            Route::post('cooperante', [\App\Http\Controllers\Api\V1\ReporteController::class, 'cooperante'])->name('cooperante');
+            Route::post('anual', [\App\Http\Controllers\Api\V1\ReporteController::class, 'anual'])->name('anual');
+            Route::post('global', [\App\Http\Controllers\Api\V1\ReporteController::class, 'global'])->name('global');
         });
 
     });
