@@ -99,6 +99,17 @@ class Proyecto extends BaseModel
 
     public function getMontoFormateadoAttribute(): string
     {
-        return number_format($this->monto_total ?? 0, 2) . ' ' . $this->moneda;
+        return number_format((float) $this->monto_total, 2, '.', ',') . ' ' . ($this->moneda ?? 'USD');
+    }
+
+    public function getColorMarcadorAttribute(): string
+    {
+        return match ($this->estado) {
+            'En gestión'   => '#F59E0B',
+            'En ejecución' => '#3B82F6',
+            'Finalizado'   => '#10B981',
+            'Suspendido'   => '#EF4444',
+            default        => '#6B7280',
+        };
     }
 }

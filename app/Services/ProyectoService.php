@@ -99,6 +99,10 @@ class ProyectoService
                 $proyecto->ods()->sync($datos['ods_ids']);
             }
 
+            \Illuminate\Support\Facades\Cache::forget('portal.mapa.catalogos');
+            \Illuminate\Support\Facades\Cache::forget('portal.conteos');
+            \Illuminate\Support\Facades\Cache::forget('portal.estadisticas');
+
             return $proyecto;
         });
     }
@@ -144,6 +148,10 @@ class ProyectoService
                 $proyecto->ods()->sync($datos['ods_ids']);
             }
 
+            \Illuminate\Support\Facades\Cache::forget('portal.mapa.catalogos');
+            \Illuminate\Support\Facades\Cache::forget('portal.conteos');
+            \Illuminate\Support\Facades\Cache::forget('portal.estadisticas');
+
             return $proyecto;
         });
     }
@@ -151,11 +159,17 @@ class ProyectoService
     public function eliminar(Proyecto $proyecto): void
     {
         $proyecto->delete();
+        \Illuminate\Support\Facades\Cache::forget('portal.mapa.catalogos');
+        \Illuminate\Support\Facades\Cache::forget('portal.conteos');
+        \Illuminate\Support\Facades\Cache::forget('portal.estadisticas');
     }
 
     public function cambiarEstado(Proyecto $proyecto, string $nuevoEstado): void
     {
         $proyecto->update(['estado' => $nuevoEstado]);
+        \Illuminate\Support\Facades\Cache::forget('portal.mapa.catalogos');
+        \Illuminate\Support\Facades\Cache::forget('portal.conteos');
+        \Illuminate\Support\Facades\Cache::forget('portal.estadisticas');
     }
 
     public function exportarExcel(array $filtros): BinaryFileResponse

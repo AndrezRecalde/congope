@@ -66,7 +66,9 @@ class BuenaPracticaService
     {
         return DB::transaction(function () use ($datos, $usuario) {
             $datos['registrado_por'] = $usuario->id;
-            return BuenaPractica::create($datos);
+            $practica = BuenaPractica::create($datos);
+            \Illuminate\Support\Facades\Cache::forget('portal.conteos');
+            return $practica;
         });
     }
 
@@ -74,6 +76,7 @@ class BuenaPracticaService
     {
         return DB::transaction(function () use ($practica, $datos) {
             $practica->update($datos);
+            \Illuminate\Support\Facades\Cache::forget('portal.conteos');
             return $practica->fresh(['provincia', 'proyecto']);
         });
     }
@@ -81,11 +84,13 @@ class BuenaPracticaService
     public function eliminar(BuenaPractica $practica): void
     {
         $practica->delete();
+        \Illuminate\Support\Facades\Cache::forget('portal.conteos');
     }
 
     public function destacar(BuenaPractica $practica, bool $estado): BuenaPractica
     {
         $practica->update(['es_destacada' => $estado]);
+        \Illuminate\Support\Facades\Cache::forget('portal.conteos');
         return $practica->fresh();
     }
 

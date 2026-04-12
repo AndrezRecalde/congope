@@ -51,7 +51,9 @@ class ProyectoEmblematicoService
     {
         return DB::transaction(function () use ($datos) {
             $datos['es_publico'] = false;
-            return ProyectoEmblematico::create($datos);
+            $emblematico = ProyectoEmblematico::create($datos);
+            \Illuminate\Support\Facades\Cache::forget('portal.conteos');
+            return $emblematico;
         });
     }
 
@@ -61,6 +63,7 @@ class ProyectoEmblematicoService
 
         return DB::transaction(function () use ($emblematico, $datos) {
             $emblematico->update($datos);
+            \Illuminate\Support\Facades\Cache::forget('portal.conteos');
             return $emblematico->fresh();
         });
     }
@@ -68,11 +71,13 @@ class ProyectoEmblematicoService
     public function publicar(ProyectoEmblematico $emblematico, bool $estado): ProyectoEmblematico
     {
         $emblematico->update(['es_publico' => $estado]);
+        \Illuminate\Support\Facades\Cache::forget('portal.conteos');
         return $emblematico->fresh();
     }
 
     public function eliminar(ProyectoEmblematico $emblematico): void
     {
         $emblematico->delete();
+        \Illuminate\Support\Facades\Cache::forget('portal.conteos');
     }
 }

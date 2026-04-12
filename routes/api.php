@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\Api\V1\PublicoController;
+
 Route::prefix('v1')->group(function () {
 
     Route::prefix('auth')->name('auth.')->group(function () {
@@ -15,7 +17,13 @@ Route::prefix('v1')->group(function () {
     });
 
     // Portal público
-    Route::get('publico/emblematicos', [\App\Http\Controllers\Api\V1\ProyectoEmblematicoController::class, 'indexPublico'])->name('publico.emblematicos');
+    Route::prefix('publico')->name('publico.')->group(function () {
+        Route::get('mapa/catalogos', [PublicoController::class, 'mapaCatalogos'])->name('mapa.catalogos');
+        Route::get('mapa/filtrar', [PublicoController::class, 'mapaFiltrar'])->name('mapa.filtrar');
+        Route::get('conteos', [PublicoController::class, 'conteos'])->name('conteos');
+        Route::get('estadisticas', [PublicoController::class, 'estadisticas'])->name('estadisticas');
+        Route::get('proyectos/{id}', [PublicoController::class, 'showProyecto'])->name('proyectos.show');
+    });
 
     // Rutas protegidas genéricas
     Route::middleware('auth:sanctum')->group(function () {
