@@ -8,7 +8,7 @@ Route::prefix('v1')->group(function () {
 
     Route::prefix('auth')->name('auth.')->group(function () {
         Route::post('login', [\App\Http\Controllers\Api\V1\AuthController::class, 'login'])->name('login');
-        
+
         Route::middleware('auth:sanctum')->group(function () {
             Route::post('logout', [\App\Http\Controllers\Api\V1\AuthController::class, 'logout'])->name('logout');
             Route::get('me', [\App\Http\Controllers\Api\V1\AuthController::class, 'me'])->name('me');
@@ -66,7 +66,7 @@ Route::prefix('v1')->group(function () {
         Route::get('buenas-practicas/exportar', [\App\Http\Controllers\Api\V1\BuenaPracticaController::class, 'exportar'])->name('buenas-practicas.exportar');
         Route::apiResource('buenas-practicas', \App\Http\Controllers\Api\V1\BuenaPracticaController::class)->parameters(['buenas-practicas' => 'buena_practica']);
         Route::patch('buenas-practicas/{buena_practica}/destacar', [\App\Http\Controllers\Api\V1\BuenaPracticaController::class, 'destacar'])->name('buenas-practicas.destacar');
-        
+
         // Valoraciones (sub-recurso)
         Route::prefix('buenas-practicas/{buena_practica}')->name('buenas-practicas.')->group(function () {
             Route::post('valoraciones', [\App\Http\Controllers\Api\V1\ValoracionPracticaController::class, 'store'])->name('valoraciones.store');
@@ -87,7 +87,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // Documentos
-        Route::get('documentos', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'index'])->name('documentos.index');
+        Route::post('documentos/buscar', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'index'])->name('documentos.index');
         Route::post('documentos', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'store'])->name('documentos.store');
         Route::get('documentos/{documento}', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'show'])->name('documentos.show');
         Route::put('documentos/{documento}', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'update'])->name('documentos.update');

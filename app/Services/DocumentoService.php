@@ -20,9 +20,9 @@ class DocumentoService
 {
     public const TIPOS_MODELO = [
         'proyecto' => Proyecto::class,
-        'actor'    => ActorCooperacion::class,
-        'red'      => Red::class,
-        'evento'   => Evento::class,
+        'actor' => ActorCooperacion::class,
+        'red' => Red::class,
+        'evento' => Evento::class,
     ];
 
     /**
@@ -52,14 +52,14 @@ class DocumentoService
 
         // En caso de que el método sea documents()
         if (method_exists($entidad, 'documents')) {
-             $query = $entidad->documents();
+            $query = $entidad->documents();
         } else if (method_exists($entidad, 'documentos')) {
-             $query = $entidad->documentos();
+            $query = $entidad->documentos();
         } else {
-             // as fallback since Documento uses morphTo as documentable which maps to 'documentacion' usually,
-             // let's just query manually if relationship name is unknown
-             $query = Documento::where('documentable_type', get_class($entidad))
-                 ->where('documentable_id', $entidad->id);
+            // as fallback since Documento uses morphTo as documentable which maps to 'documentacion' usually,
+            // let's just query manually if relationship name is unknown
+            $query = Documento::where('documentable_type', get_class($entidad))
+                ->where('documentable_id', $entidad->id);
         }
 
         if (!$usuario || !$usuario->can('documentos.ver_confidencial')) {
@@ -80,23 +80,33 @@ class DocumentoService
     public function listarPublicos(string $tipo, string $entidadId): Collection
     {
         $entidad = $this->resolverEntidad($tipo, $entidadId);
-        
+
         $query = Documento::where('documentable_type', get_class($entidad))
-                 ->where('documentable_id', $entidad->id);
-                 
+            ->where('documentable_id', $entidad->id);
+
         return $query->publicos()->orderBy('created_at', 'desc')->get();
     }
 
     /**
      * Sube un nuevo documento y lo asocia a una entidad.
      */
-    public function subir(string $tipo, string $entidadId, UploadedFile $archivo, array $metadata, $usuario): Documento
+    public function subir(string $tipo, string $entidadId, UploadedFile $archivo, string $provincia_id, array $metadata, $usuario): Documento
     {
-        return DB::transaction(function () use ($tipo, $entidadId, $archivo, $metadata, $usuario) {
+        return DB::transaction(function () use ($tipo, $entidadId, $archivo, $provincia_id, $metadata, $usuario) {
             $entidad = $this->resolverEntidad($tipo, $entidadId);
 
             $extensionesPermitidas = [
-                'pdf', 'docx', 'xlsx', 'doc', 'xls', 'pptx', 'ppt', 'jpg', 'jpeg', 'png', 'zip'
+                'pdf',
+                'docx',
+                'xlsx',
+                'doc',
+                'xls',
+                'pptx',
+                'ppt',
+                'jpg',
+                'jpeg',
+                'png',
+                'zip'
             ];
 
             $extension = strtolower($archivo->getClientOriginalExtension() ?: $archivo->extension());
@@ -111,15 +121,16 @@ class DocumentoService
             $rutaGuardada = $archivo->storeAs($ruta, $nombreArchivo, 'local');
 
             $documento = new Documento([
-                'titulo'            => $metadata['titulo'],
-                'categoria'         => $metadata['categoria'],
-                'ruta_archivo'      => $rutaGuardada,
-                'nombre_archivo'    => $archivo->getClientOriginalName(),
-                'mime_type'         => $archivo->getMimeType(),
-                'tamano_bytes'      => $archivo->getSize(),
-                'es_publico'        => $metadata['es_publico'] ?? false,
+                'titulo' => $metadata['titulo'],
+                'categoria' => $metadata['categoria'],
+                'provincia_id' => $provincia_id,
+                'ruta_archivo' => $rutaGuardada,
+                'nombre_archivo' => $archivo->getClientOriginalName(),
+                'mime_type' => $archivo->getMimeType(),
+                'tamano_bytes' => $archivo->getSize(),
+                'es_publico' => $metadata['es_publico'] ?? false,
                 'fecha_vencimiento' => $metadata['fecha_vencimiento'] ?? null,
-                'subido_por'        => $usuario->id,
+                'subido_por' => $usuario->id,
             ]);
 
             $documento->documentable()->associate($entidad);
@@ -153,9 +164,10 @@ class DocumentoService
     public function actualizar(Documento $documento, array $metadata): Documento
     {
         $documento->update([
-            'titulo'            => $metadata['titulo'] ?? $documento->titulo,
-            'categoria'         => $metadata['categoria'] ?? $documento->categoria,
-            'es_publico'        => $metadata['es_publico'] ?? $documento->es_publico,
+            'titulo' => $metadata['titulo'] ?? $documento->titulo,
+            'categoria' => $metadata['categoria'] ?? $documento->categoria,
+            'provincia_id' => $metadata['provincia_id'] ?? $documento->provincia_id,
+            'es_publico' => $metadata['es_publico'] ?? $documento->es_publico,
             'fecha_vencimiento' => $metadata['fecha_vencimiento'] ?? $documento->fecha_vencimiento,
         ]);
 

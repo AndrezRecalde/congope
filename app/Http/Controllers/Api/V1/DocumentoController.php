@@ -46,6 +46,7 @@ class DocumentoController extends ApiController
             $request->entidad_tipo,
             $request->entidad_id,
             $request->file('archivo'),
+            $request->provincia_id,
             $request->validated(),
             $request->user()
         );
@@ -99,7 +100,7 @@ class DocumentoController extends ApiController
         Gate::authorize('publicar', $documento);
 
         $estado = $request->boolean('es_publico', true);
-        
+
         $doc = $this->service->publicar($documento, $estado);
 
         return $this->respondSuccess(

@@ -30,7 +30,7 @@ class DashboardService
             });
             $queryPracticas->whereIn('provincia_id', $provinciaIds);
         } elseif ($provinciaIds && $provinciaIds->isEmpty()) {
-             // Si no tiene provincias que devolver, prevenimos match global
+            // Si no tiene provincias que devolver, prevenimos match global
             $queryProyectos->whereIn('id', []);
             $queryPracticas->whereIn('provincia_id', []);
         }
@@ -61,6 +61,17 @@ class DashboardService
                     ->groupBy('tipo')
                     ->pluck('total', 'tipo'),
             ],
+            'proyectos_destacados' => Proyecto::with(['actor', 'provincias'])->where('estado', 'En ejecución')->orderByDesc('monto_total')->take(5)->get()->map(function ($p) {
+                return [
+                    'id' => $p->id,
+                    'nombre' => $p->nombre,
+                    'inversion' => (string) $p->monto_total,
+                    'actor' => optional($p->actor)->nombre ?? 'No asignado',
+                    'provincias' => $p->provincias->map(function ($prov) {
+                        return ['nombre' => $prov->nombre, 'porcentaje_avance' => $prov->pivot->porcentaje_avance];
+                    })->toArray()
+                ];
+            }),
         ];
     }
 
@@ -102,7 +113,7 @@ class DashboardService
             ->count();
 
         $queryHitos = HitoProyecto::pendientes()->where('fecha_limite', '<', today());
-        
+
         if ($provinciaIds && $provinciaIds->isNotEmpty()) {
             $queryHitos->whereHas('proyecto.provincias', function ($pq) use ($provinciaIds) {
                 $pq->whereIn('provincias.id', $provinciaIds);
