@@ -13,7 +13,7 @@ class UpdateActorCooperacionRequest extends FormRequest
 
     public function rules(): array
     {
-        $actorId = $this->route('id') ?? $this->route('actor');
+        $actorId = $this->route('actore') ?? $this->route('actor') ?? $this->route('id');
 
         return [
             'identificador_institucional' => 'nullable|string|min:10|max:25|unique:actores_cooperacion,identificador_institucional,' . $actorId,
