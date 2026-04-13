@@ -53,7 +53,7 @@ class PublicoController extends ApiController
                                 'finalizado' => $proyectos->where('estado', 'Finalizado')->count(),
                             ],
                         ];
-                    });
+                    })->values()->toArray();
 
                 $opcionesProvincias = Provincia::query()
                     ->whereHas('proyectos', function ($q) {
@@ -64,7 +64,7 @@ class PublicoController extends ApiController
                     ->map(fn($p) => [
                         'value' => $p->id,
                         'label' => $p->nombre,
-                    ]);
+                    ])->values()->toArray();
 
                 $opcionesCantones = Canton::query()
                     ->whereHas('proyectos')
@@ -76,7 +76,7 @@ class PublicoController extends ApiController
                         'label' => $c->nombre,
                         'provincia_id' => $c->provincia_id,
                         'provincia' => $c->provincia?->nombre,
-                    ]);
+                    ])->values()->toArray();
 
                 $opcionesActores = ActorCooperacion::query()
                     ->where('estado', 'Activo')
@@ -89,7 +89,7 @@ class PublicoController extends ApiController
                         'value' => $a->id,
                         'label' => $a->nombre,
                         'tipo' => $a->tipo,
-                    ]);
+                    ])->values()->toArray();
 
                 return [
                     'provincias' => $provincias,
@@ -323,14 +323,14 @@ class PublicoController extends ApiController
                 $estados = ['En gestión', 'En ejecución', 'Finalizado'];
 
                 $montoTotal = (float) Proyecto::query()
-                    ->whereIn('estado', $estados)
+                    ->whereIn('proyectos.estado', $estados)
                     ->sum('monto_total');
 
                 $porOds = Ods::query()
+                    ->whereHas('proyectos', fn($q) => $q->whereIn('proyectos.estado', $estados))
                     ->withCount([
-                        'proyectos as total' => fn($q) => $q->whereIn('estado', $estados),
+                        'proyectos as total' => fn($q) => $q->whereIn('proyectos.estado', $estados),
                     ])
-                    ->having('total', '>', 0)
                     ->orderByDesc('total')
                     ->get()
                     ->map(fn($o) => [
@@ -338,11 +338,11 @@ class PublicoController extends ApiController
                         'numero' => $o->numero,
                         'nombre' => $o->nombre,
                         'color_hex' => $o->color_hex,
-                        'total' => $o->total,
-                    ]);
+                        'total_proyectos' => $o->total,
+                    ])->values()->toArray();
 
                 $porTipoActor = Proyecto::query()
-                    ->whereIn('estado', $estados)
+                    ->whereIn('proyectos.estado', $estados)
                     ->join('actores_cooperacion', 'proyectos.actor_id', '=', 'actores_cooperacion.id')
                     ->selectRaw('actores_cooperacion.tipo, COUNT(*) as total')
                     ->groupBy('actores_cooperacion.tipo')
@@ -351,10 +351,10 @@ class PublicoController extends ApiController
                     ->map(fn($r) => [
                         'tipo' => $r->tipo,
                         'total' => $r->total,
-                    ]);
+                    ])->values()->toArray();
 
                 $porFlujo = Proyecto::query()
-                    ->whereIn('estado', $estados)
+                    ->whereIn('proyectos.estado', $estados)
                     ->whereNotNull('flujo_direccion')
                     ->selectRaw('flujo_direccion, COUNT(*) as total')
                     ->groupBy('flujo_direccion')
@@ -363,13 +363,13 @@ class PublicoController extends ApiController
                     ->map(fn($r) => [
                         'flujo' => $r->flujo_direccion,
                         'total' => $r->total,
-                    ]);
+                    ])->values()->toArray();
 
                 return [
                     'kpis' => [
-                        'total_proyectos' => Proyecto::whereIn('estado', $estados)->count(),
+                        'total_proyectos' => Proyecto::whereIn('proyectos.estado', $estados)->count(),
                         'total_actores' => ActorCooperacion::where('estado', 'Activo')->count(),
-                        'total_provincias' => Provincia::whereHas('proyectos', fn($q) => $q->whereIn('estado', $estados))->count(),
+                        'total_provincias' => Provincia::whereHas('proyectos', fn($q) => $q->whereIn('proyectos.estado', $estados))->count(),
                         'monto_formateado' => '$' . number_format($montoTotal / 1_000_000, 1) . 'M USD',
                     ],
                     'por_ods' => $porOds,
