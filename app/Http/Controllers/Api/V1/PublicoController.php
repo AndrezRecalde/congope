@@ -511,4 +511,191 @@ class PublicoController extends ApiController
             ]
         ];
     }
+
+    /**
+     * GET /api/v1/publico/emblematicos
+     *
+     * Proyectos emblemáticos públicos para el portal.
+     * Solo los marcados con es_publico = true.
+     *
+     * Respuesta completa con reconocimientos y proyecto
+     * anidado para las cards del portal público.
+     *
+     * Query params opcionales:
+     *   page     → número de página (default: 1)
+     *   per_page → resultados por página (default: 12)
+     *
+     * Cacheado 15 minutos. Se invalida cuando cambia
+     * un ProyectoEmblematico (via ProyectoEmblematicoObserver
+     * si existe, o manualmente).
+     */
+    public function emblematicos(Request $request): JsonResponse
+    {
+        $perPage = $request->integer('per_page', 12);
+        $page    = $request->integer('page', 1);
+
+        $cacheKey = "portal.emblematicos.page_{$page}.per_{$perPage}";
+
+        $data = Cache::remember(
+            $cacheKey,
+            now()->addMinutes(15),
+            function () use ($perPage) {
+                return ProyectoEmblematico::query()
+                    ->with([
+                        'provincia:id,nombre',
+                        'proyecto:id,codigo,nombre,estado,'
+                            . 'sector_tematico,monto_total,'
+                            . 'monto_formateado,moneda',
+                        'reconocimientos:id,emblematico_id,'
+                            . 'titulo,organismo_otorgante,'
+                            . 'ambito,anio',
+                    ])
+                    ->where('es_publico', true)
+                    ->whereNull('deleted_at')
+                    ->orderByDesc('created_at')
+                    ->paginate($perPage);
+            }
+        );
+
+        // Si el resultado viene del caché como objeto
+        // paginado, mapear. Si no, paginar de nuevo.
+        $emblematicos = $data instanceof \Illuminate\Pagination\LengthAwarePaginator
+            ? $data
+            : ProyectoEmblematico::query()
+                ->with([
+                    'provincia:id,nombre',
+                    'proyecto:id,codigo,nombre,estado,'
+                        . 'sector_tematico,monto_total,'
+                        . 'monto_formateado,moneda',
+                    'reconocimientos:id,emblematico_id,'
+                        . 'titulo,organismo_otorgante,'
+                        . 'ambito,anio',
+                ])
+                ->where('es_publico', true)
+                ->whereNull('deleted_at')
+                ->orderByDesc('created_at')
+                ->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Proyectos emblemáticos públicos',
+            'data'    => $emblematicos->getCollection()->map(
+                fn($e) => [
+                    'id'                  => $e->id,
+                    'titulo'              => $e->titulo,
+                    'descripcion_impacto' => $e->descripcion_impacto,
+                    'periodo'             => $e->periodo,
+
+                    'provincia' => $e->provincia ? [
+                        'id'     => $e->provincia->id,
+                        'nombre' => $e->provincia->nombre,
+                    ] : null,
+
+                    'proyecto' => $e->proyecto ? [
+                        'id'               => $e->proyecto->id,
+                        'codigo'           => $e->proyecto->codigo,
+                        'nombre'           => $e->proyecto->nombre,
+                        'estado'           => $e->proyecto->estado,
+                        'sector_tematico'  =>
+                            $e->proyecto->sector_tematico,
+                        'monto_formateado' =>
+                            $e->proyecto->monto_formateado
+                            ?? number_format(
+                                (float) $e->proyecto->monto_total,
+                                2, '.', ','
+                            ) . ' ' . ($e->proyecto->moneda ?? 'USD'),
+                    ] : null,
+
+                    'reconocimientos' => $e->reconocimientos
+                        ->map(fn($r) => [
+                            'id'                  => $r->id,
+                            'titulo'              => $r->titulo,
+                            'organismo_otorgante' =>
+                                $r->organismo_otorgante,
+                            'ambito' => $r->ambito,
+                            'anio'   => $r->anio,
+                        ]),
+
+                    'reconocimientos_count' =>
+                        $e->reconocimientos->count(),
+
+                    'created_at' =>
+                        $e->created_at?->format('d/m/Y'),
+                ]
+            ),
+            'meta' => [
+                'current_page' => $emblematicos->currentPage(),
+                'last_page'    => $emblematicos->lastPage(),
+                'per_page'     => $emblematicos->perPage(),
+                'total'        => $emblematicos->total(),
+            ],
+        ]);
+    }
+
+    /**
+     * GET /api/v1/publico/buenas-practicas
+     *
+     * Buenas prácticas destacadas para el portal público.
+     * Solo las marcadas con es_destacada = true.
+     * Ordenadas por calificacion_promedio DESC para
+     * mostrar las mejor valoradas primero.
+     *
+     * No expone datos sensibles de contacto ni de
+     * gestión interna.
+     *
+     * Query params opcionales:
+     *   page     → número de página (default: 1)
+     *   per_page → resultados por página (default: 9)
+     *
+     * Se utiliza per_page: 9 para grids de 3 columnas.
+     */
+    public function buenasPracticas(Request $request): JsonResponse
+    {
+        $perPage = $request->integer('per_page', 9);
+
+        $practicas = BuenaPractica::query()
+            ->with([
+                'provincia:id,nombre',
+            ])
+            ->where('es_destacada', true)
+            ->whereNull('deleted_at')
+            ->orderByDesc('calificacion_promedio')
+            ->orderByDesc('created_at')
+            ->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Buenas prácticas destacadas',
+            'data'    => $practicas->getCollection()->map(
+                fn($p) => [
+                    'id'    => $p->id,
+                    'titulo'=> $p->titulo,
+
+                    'descripcion_problema' =>
+                        $p->descripcion_problema,
+
+                    'resultados' => $p->resultados,
+
+                    'replicabilidad' => $p->replicabilidad,
+
+                    'calificacion_promedio' =>
+                        $p->calificacion_promedio,
+
+                    'provincia' => $p->provincia ? [
+                        'id'     => $p->provincia->id,
+                        'nombre' => $p->provincia->nombre,
+                    ] : null,
+
+                    'created_at' =>
+                        $p->created_at?->format('d/m/Y'),
+                ]
+            ),
+            'meta' => [
+                'current_page' => $practicas->currentPage(),
+                'last_page'    => $practicas->lastPage(),
+                'per_page'     => $practicas->perPage(),
+                'total'        => $practicas->total(),
+            ],
+        ]);
+    }
 }

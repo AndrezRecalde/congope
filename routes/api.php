@@ -23,6 +23,8 @@ Route::prefix('v1')->group(function () {
         Route::get('conteos', [PublicoController::class, 'conteos'])->name('conteos');
         Route::get('estadisticas', [PublicoController::class, 'estadisticas'])->name('estadisticas');
         Route::get('proyectos/{id}', [PublicoController::class, 'showProyecto'])->name('proyectos.show');
+        Route::get('emblematicos', [PublicoController::class, 'emblematicos'])->name('emblematicos');
+        Route::get('buenas-practicas', [PublicoController::class, 'buenasPracticas'])->name('buenas-practicas');
     });
 
     // Rutas protegidas genéricas
