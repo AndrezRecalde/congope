@@ -43,6 +43,10 @@ class ActorCooperacionService
 
     public function crear(array $datos, $usuario): ActorCooperacion
     {
+        if (isset($datos['logo']) && $datos['logo'] instanceof \Illuminate\Http\UploadedFile) {
+            $datos['logo'] = $datos['logo']->store('logos_actores', 'public');
+        }
+
         return DB::transaction(function () use ($datos) {
             $actor = ActorCooperacion::create($datos);
 
@@ -57,6 +61,13 @@ class ActorCooperacionService
 
     public function actualizar(ActorCooperacion $actor, array $datos): ActorCooperacion
     {
+        if (isset($datos['logo']) && $datos['logo'] instanceof \Illuminate\Http\UploadedFile) {
+            if ($actor->logo) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($actor->logo);
+            }
+            $datos['logo'] = $datos['logo']->store('logos_actores', 'public');
+        }
+
         return DB::transaction(function () use ($actor, $datos) {
             $actor->update($datos);
 
@@ -73,6 +84,9 @@ class ActorCooperacionService
 
     public function eliminar(ActorCooperacion $actor): void
     {
+        if ($actor->logo) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($actor->logo);
+        }
         $actor->delete();
     }
 

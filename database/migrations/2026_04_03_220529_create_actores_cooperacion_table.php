@@ -12,7 +12,9 @@ return new class extends Migration {
     {
         Schema::create('actores_cooperacion', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('nombre', 255);
+            $table->string('identificador_institucional', 25)->nullable()->unique();
+            $table->string('nombre', 255)->unique();
+            $table->string('logo', 500)->nullable();
             $table->enum('tipo', ['ONG', 'Multilateral', 'Embajada', 'Bilateral', 'Descentralizada', 'Privado', 'Academia']);
             $table->string('pais_origen', 100);
             $table->enum('estado', ['Activo', 'Inactivo', 'Potencial'])->default('Activo');

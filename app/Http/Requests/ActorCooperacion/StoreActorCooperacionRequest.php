@@ -14,8 +14,10 @@ class StoreActorCooperacionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nombre' => 'required|string|max:255',
-            'tipo' => 'required|in:ONG,Multilateral,Embajada,Bilateral,Privado,Academia',
+            'identificador_institucional' => 'nullable|string|min:10|max:25|unique:actores_cooperacion,identificador_institucional',
+            'nombre' => 'required|string|max:255|unique:actores_cooperacion,nombre',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'tipo' => 'required|in:ONG,Multilateral,Embajada,Bilateral,Descentralizada,Privado,Academia',
             'pais_origen' => 'required|string|max:100',
             'estado' => 'sometimes|in:Activo,Inactivo,Potencial',
             'contacto_nombre' => 'nullable|string|max:200',

@@ -11,7 +11,9 @@ class ActorCooperacionResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'identificador_institucional' => $this->identificador_institucional,
             'nombre' => $this->nombre,
+            'logo' => $this->logo ? asset('storage/' . $this->logo) : null,
             'tipo' => $this->tipo,
             'pais_origen' => $this->pais_origen,
             'estado' => $this->estado,

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 
 #[Table('actores_cooperacion')]
-#[Fillable('nombre', 'tipo', 'pais_origen', 'estado', 'contacto_nombre', 'contacto_email', 'contacto_telefono', 'sitio_web', 'notas')]
+#[Fillable('identificador_institucional', 'nombre', 'logo', 'tipo', 'pais_origen', 'estado', 'contacto_nombre', 'contacto_email', 'contacto_telefono', 'sitio_web', 'notas')]
 class ActorCooperacion extends BaseModel
 {
     use SoftDeletes, HasDocuments;

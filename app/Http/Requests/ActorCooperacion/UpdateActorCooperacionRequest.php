@@ -13,9 +13,13 @@ class UpdateActorCooperacionRequest extends FormRequest
 
     public function rules(): array
     {
+        $actorId = $this->route('id') ?? $this->route('actor');
+
         return [
-            'nombre' => 'sometimes|required|string|max:255',
-            'tipo' => 'sometimes|required|in:ONG,Multilateral,Embajada,Bilateral,Privado,Academia',
+            'identificador_institucional' => 'nullable|string|min:10|max:25|unique:actores_cooperacion,identificador_institucional,' . $actorId,
+            'nombre' => 'sometimes|required|string|max:255|unique:actores_cooperacion,nombre,' . $actorId,
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'tipo' => 'sometimes|required|in:ONG,Multilateral,Embajada,Bilateral,Descentralizada,Privado,Academia',
             'pais_origen' => 'sometimes|required|string|max:100',
             'estado' => 'sometimes|in:Activo,Inactivo,Potencial',
             'contacto_nombre' => 'nullable|string|max:200',
