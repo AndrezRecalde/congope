@@ -37,12 +37,15 @@ class Proyecto extends BaseModel
 
     public function cantones()
     {
-        return $this->belongsToMany(Canton::class, 'proyecto_canton');
-    }
-
-    public function parroquias()
-    {
-        return $this->belongsToMany(Parroquia::class, 'proyecto_parroquia');
+        // Los cantones son derivados de las ubicaciones asociadas al proyecto.
+        return $this->hasManyThrough(
+            Canton::class,
+            ProyectoUbicacion::class,
+            'proyecto_id', // FK en proyecto_ubicaciones
+            'id',          // PK en cantones
+            'id',          // PK en proyectos
+            'canton_id'    // FK en proyecto_ubicaciones
+        )->distinct();
     }
 
     public function ubicaciones()

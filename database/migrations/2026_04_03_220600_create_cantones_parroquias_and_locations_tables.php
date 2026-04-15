@@ -27,24 +27,11 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // 3. Proyecto -> Cantones Pivot
-        Schema::create('proyecto_canton', function (Blueprint $table) {
-            $table->foreignUuid('proyecto_id')->constrained('proyectos')->cascadeOnDelete();
-            $table->foreignUuid('canton_id')->constrained('cantones')->cascadeOnDelete();
-            $table->primary(['proyecto_id', 'canton_id']);
-        });
-
-        // 4. Proyecto -> Parroquias Pivot
-        Schema::create('proyecto_parroquia', function (Blueprint $table) {
-            $table->foreignUuid('proyecto_id')->constrained('proyectos')->cascadeOnDelete();
-            $table->foreignUuid('parroquia_id')->constrained('parroquias')->cascadeOnDelete();
-            $table->primary(['proyecto_id', 'parroquia_id']);
-        });
-
-        // 5. Proyecto -> Múltiples Ubicaciones Exactas (GIS)
+        // 3. Proyecto -> Múltiples Ubicaciones Exactas (GIS), vinculadas a un cantón
         Schema::create('proyecto_ubicaciones', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('proyecto_id')->constrained('proyectos')->cascadeOnDelete();
+            $table->foreignUuid('canton_id')->constrained('cantones')->cascadeOnDelete();
             $table->string('nombre', 255)->nullable();
             $table->timestamps();
         });
@@ -56,8 +43,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('proyecto_ubicaciones');
-        Schema::dropIfExists('proyecto_parroquia');
-        Schema::dropIfExists('proyecto_canton');
         Schema::dropIfExists('parroquias');
         Schema::dropIfExists('cantones');
     }

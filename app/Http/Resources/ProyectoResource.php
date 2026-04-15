@@ -16,10 +16,10 @@ class ProyectoResource extends JsonResource
             'descripcion' => $this->descripcion,
             'estado' => $this->estado,
             'color_marcador' => match ($this->estado) {
-                'En ejecución' => '#10B981', // Verde
-                'En gestión' => '#F59E0B',   // Amarillo/Ámbar
-                'Suspendido' => '#EF4444',   // Rojo
-                'Finalizado' => '#0F52BA',   // Azul
+                'En ejecución' => '#10B981',
+                'En gestión' => '#F59E0B',
+                'Suspendido' => '#EF4444',
+                'Finalizado' => '#0F52BA',
                 default => '#9CA3AF'
             },
             'monto_total' => $this->monto_total,
@@ -45,25 +45,51 @@ class ProyectoResource extends JsonResource
                     ];
                 });
             }),
-            'cantones' => $this->whenLoaded('cantones', function () {
-                return $this->cantones->map(function ($c) {
-                    return ['id' => $c->id, 'nombre' => $c->nombre];
-                });
+
+            // Ubicaciones agrupadas por cantón —fuente única de verdad.
+            'ubicaciones_por_canton' => $this->whenLoaded('ubicaciones', function () {
+                return $this->ubicaciones
+                    ->load('canton')
+                    ->groupBy('canton_id')
+                    ->map(function ($ubicaciones, $cantonId) {
+                        $canton = $ubicaciones->first()->canton;
+                        return [
+                            'canton_id' => $cantonId,
+                            'canton_nombre' => $canton?->nombre,
+                            'ubicaciones' => $ubicaciones->map(function ($u) {
+                                return [
+                                    'id' => $u->id,
+                                    'nombre' => $u->nombre,
+                                    'coordenadas' => $u->coordenadas,
+                                ];
+                            })->values(),
+                        ];
+                    })->values();
             }),
-            'parroquias' => $this->whenLoaded('parroquias', function () {
-                return $this->parroquias->map(function ($p) {
-                    return ['id' => $p->id, 'nombre' => $p->nombre];
-                });
-            }),
+
+            // Lista plana de ubicaciones (mantiene compatibilidad con el mapa general).
             'ubicaciones' => $this->whenLoaded('ubicaciones', function () {
                 return $this->ubicaciones->map(function ($u) {
                     return [
                         'id' => $u->id,
+                        'canton_id' => $u->canton_id,
                         'nombre' => $u->nombre,
                         'coordenadas' => $u->coordenadas,
                     ];
                 });
             }),
+
+            // Cantones únicos cubiertos por el proyecto (derivados de ubicaciones).
+            'cantones' => $this->whenLoaded('ubicaciones', function () {
+                return $this->ubicaciones
+                    ->load('canton')
+                    ->pluck('canton')
+                    ->filter()
+                    ->unique('id')
+                    ->map(fn($c) => ['id' => $c->id, 'nombre' => $c->nombre])
+                    ->values();
+            }),
+
             'ods' => $this->whenLoaded('ods', function () {
                 return $this->ods->map(function ($o) {
                     return [

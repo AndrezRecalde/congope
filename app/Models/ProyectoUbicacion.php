@@ -16,6 +16,7 @@ class ProyectoUbicacion extends Model
 
     protected $fillable = [
         'proyecto_id',
+        'canton_id',
         'nombre',
         // 'ubicacion' is managed via DB::raw PostGIS expressions
     ];
@@ -25,11 +26,19 @@ class ProyectoUbicacion extends Model
         return $this->belongsTo(Proyecto::class);
     }
 
-    // Helper para parsear la longitud y latitud si es necesario.
+    public function canton(): BelongsTo
+    {
+        return $this->belongsTo(Canton::class);
+    }
+
+    // Helper para parsear la longitud y latitud desde PostGIS.
     public function getCoordenadasAttribute()
     {
         if (!$this->id) return null;
-        $geom = DB::selectOne("SELECT ST_X(ubicacion::geometry) as lng, ST_Y(ubicacion::geometry) as lat FROM proyecto_ubicaciones WHERE id = ?", [$this->id]);
+        $geom = DB::selectOne(
+            "SELECT ST_X(ubicacion::geometry) as lng, ST_Y(ubicacion::geometry) as lat FROM proyecto_ubicaciones WHERE id = ?",
+            [$this->id]
+        );
         return $geom ? ['lat' => (float) $geom->lat, 'lng' => (float) $geom->lng] : null;
     }
 }

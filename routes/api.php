@@ -25,6 +25,11 @@ Route::prefix('v1')->group(function () {
         Route::get('proyectos/{id}', [PublicoController::class, 'showProyecto'])->name('proyectos.show');
         Route::get('emblematicos', [PublicoController::class, 'emblematicos'])->name('emblematicos');
         Route::get('buenas-practicas', [PublicoController::class, 'buenasPracticas'])->name('buenas-practicas');
+
+        // Catalogo Ubicaciones
+        Route::get('provincias', [\App\Http\Controllers\Api\V1\ProvinciaController::class, 'index'])->name('provincias.index');
+        Route::get('cantones', [\App\Http\Controllers\Api\V1\CantonController::class, 'index'])->name('cantones.index');
+        Route::get('parroquias', [\App\Http\Controllers\Api\V1\ParroquiaController::class, 'index'])->name('parroquias.index');
     });
 
     // Rutas protegidas genéricas
@@ -36,7 +41,6 @@ Route::prefix('v1')->group(function () {
         Route::get('auditoria', [\App\Http\Controllers\Api\V1\UsuarioController::class, 'auditoria'])->name('auditoria.index');
 
         // Provincias (catálogo, solo lectura + consultas)
-        Route::get('provincias', [\App\Http\Controllers\Api\V1\ProvinciaController::class, 'index'])->name('provincias.index');
         Route::get('provincias/{provincia}', [\App\Http\Controllers\Api\V1\ProvinciaController::class, 'show'])->name('provincias.show');
         Route::get('provincias/{provincia}/usuarios', [\App\Http\Controllers\Api\V1\ProvinciaController::class, 'usuariosAsignados'])->name('provincias.usuarios');
 

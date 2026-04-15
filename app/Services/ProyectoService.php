@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Proyecto;
+use App\Models\ProyectoUbicacion;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -16,14 +17,12 @@ class ProyectoService
 
         if (!$usuario->can('proyectos.ver_todas_provincias')) {
             $provinciaIds = $usuario->provincias()->pluck('provincias.id');
-            // assuming provicias relation uses `proyecto_provincia` pivot
             $query->whereHas('provincias', function ($q) use ($provinciaIds) {
                 $q->whereIn('provincias.id', $provinciaIds);
             });
         }
 
         if (!empty($filtros['search'])) {
-            // $query->buscar($filtros['search']);
             $query->where('nombre', 'LIKE', '%' . $filtros['search'] . '%')
                   ->orWhere('codigo', 'LIKE', '%' . $filtros['search'] . '%');
         }
@@ -41,8 +40,8 @@ class ProyectoService
 
     public function obtener(string $id, $usuario): Proyecto
     {
-        $query = Proyecto::with(['provincias', 'cantones', 'parroquias', 'ubicaciones', 'ods', 'actor', 'hitos', 'documentos']);
-        
+        $query = Proyecto::with(['provincias', 'ubicaciones.canton', 'ods', 'actor', 'hitos', 'documentos']);
+
         if (!$usuario->can('proyectos.ver_todas_provincias')) {
             $provinciaIds = $usuario->provincias()->pluck('provincias.id');
             $query->whereHas('provincias', function ($q) use ($provinciaIds) {
@@ -57,41 +56,38 @@ class ProyectoService
     {
         return DB::transaction(function () use ($datos, $usuario) {
             $datos['creado_por'] = $usuario->id;
-            // Generate basic code if not provided
+
             if (empty($datos['codigo'])) {
-                $datos['codigo'] = 'PRJ-' . strtoupper(uniqid()); 
+                $datos['codigo'] = 'PRJ-' . strtoupper(uniqid());
             }
-            
+
             $proyecto = Proyecto::create($datos);
 
             if (isset($datos['provincias'])) {
                 $syncData = [];
                 foreach ($datos['provincias'] as $provincia) {
                     $syncData[$provincia['id']] = [
-                        'rol' => $provincia['rol'] ?? 'Beneficiaria',
-                        'porcentaje_avance' => $provincia['porcentaje_avance'] ?? 0,
-                        'beneficiarios_directos' => $provincia['beneficiarios_directos'] ?? null,
+                        'rol'                     => $provincia['rol'] ?? 'Beneficiaria',
+                        'porcentaje_avance'       => $provincia['porcentaje_avance'] ?? 0,
+                        'beneficiarios_directos'  => $provincia['beneficiarios_directos'] ?? null,
                         'beneficiarios_indirectos' => $provincia['beneficiarios_indirectos'] ?? null,
                     ];
                 }
                 $proyecto->provincias()->sync($syncData);
             }
 
-            if (isset($datos['canton_ids'])) {
-                $proyecto->cantones()->sync($datos['canton_ids']);
-            }
-
-            if (isset($datos['parroquia_ids'])) {
-                $proyecto->parroquias()->sync($datos['parroquia_ids']);
-            }
-
+            // Cada ubicación ahora lleva su canton_id explícito.
             if (isset($datos['ubicaciones'])) {
-                foreach($datos['ubicaciones'] as $ubicacion) {
-                    $ub = \App\Models\ProyectoUbicacion::create([
+                foreach ($datos['ubicaciones'] as $ubicacion) {
+                    $ub = ProyectoUbicacion::create([
                         'proyecto_id' => $proyecto->id,
-                        'nombre' => $ubicacion['nombre'] ?? null,
+                        'canton_id'   => $ubicacion['canton_id'],
+                        'nombre'      => $ubicacion['nombre'] ?? null,
                     ]);
-                    DB::statement("UPDATE proyecto_ubicaciones SET ubicacion = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?", [$ubicacion['lng'], $ubicacion['lat'], $ub->id]);
+                    DB::statement(
+                        "UPDATE proyecto_ubicaciones SET ubicacion = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?",
+                        [$ubicacion['lng'], $ubicacion['lat'], $ub->id]
+                    );
                 }
             }
 
@@ -116,31 +112,28 @@ class ProyectoService
                 $syncData = [];
                 foreach ($datos['provincias'] as $provincia) {
                     $syncData[$provincia['id']] = [
-                        'rol' => $provincia['rol'] ?? 'Beneficiaria',
-                        'porcentaje_avance' => $provincia['porcentaje_avance'] ?? 0,
-                        'beneficiarios_directos' => $provincia['beneficiarios_directos'] ?? null,
+                        'rol'                     => $provincia['rol'] ?? 'Beneficiaria',
+                        'porcentaje_avance'       => $provincia['porcentaje_avance'] ?? 0,
+                        'beneficiarios_directos'  => $provincia['beneficiarios_directos'] ?? null,
                         'beneficiarios_indirectos' => $provincia['beneficiarios_indirectos'] ?? null,
                     ];
                 }
                 $proyecto->provincias()->sync($syncData);
             }
 
-            if (isset($datos['canton_ids'])) {
-                $proyecto->cantones()->sync($datos['canton_ids']);
-            }
-
-            if (isset($datos['parroquia_ids'])) {
-                $proyecto->parroquias()->sync($datos['parroquia_ids']);
-            }
-
+            // Reemplaza todas las ubicaciones; cada una lleva su canton_id.
             if (isset($datos['ubicaciones'])) {
                 $proyecto->ubicaciones()->delete();
-                foreach($datos['ubicaciones'] as $ubicacion) {
-                    $ub = \App\Models\ProyectoUbicacion::create([
+                foreach ($datos['ubicaciones'] as $ubicacion) {
+                    $ub = ProyectoUbicacion::create([
                         'proyecto_id' => $proyecto->id,
-                        'nombre' => $ubicacion['nombre'] ?? null,
+                        'canton_id'   => $ubicacion['canton_id'],
+                        'nombre'      => $ubicacion['nombre'] ?? null,
                     ]);
-                    DB::statement("UPDATE proyecto_ubicaciones SET ubicacion = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?", [$ubicacion['lng'], $ubicacion['lat'], $ub->id]);
+                    DB::statement(
+                        "UPDATE proyecto_ubicaciones SET ubicacion = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?",
+                        [$ubicacion['lng'], $ubicacion['lat'], $ub->id]
+                    );
                 }
             }
 
@@ -174,7 +167,10 @@ class ProyectoService
 
     public function exportarExcel(array $filtros): BinaryFileResponse
     {
-        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\ProyectosExport($filtros), 'proyectos.xlsx');
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\ProyectosExport($filtros),
+            'proyectos.xlsx'
+        );
     }
 
     public function exportarPdf(array $filtros): Response

@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Canton extends Model
 {
@@ -31,8 +30,8 @@ class Canton extends Model
         return $this->hasMany(Parroquia::class);
     }
 
-    public function proyectos(): BelongsToMany
+    public function ubicaciones(): HasMany
     {
-        return $this->belongsToMany(Proyecto::class, 'proyecto_canton');
+        return $this->hasMany(ProyectoUbicacion::class);
     }
 }
