@@ -56,9 +56,6 @@ class PublicoController extends ApiController
                     })->values()->toArray();
 
                 $opcionesProvincias = Provincia::query()
-                    ->whereHas('proyectos', function ($q) {
-                        $q->whereIn('estado', ['En gestión', 'En ejecución', 'Finalizado']);
-                    })
                     ->orderBy('nombre')
                     ->get(['id', 'nombre'])
                     ->map(fn($p) => [
@@ -67,7 +64,6 @@ class PublicoController extends ApiController
                     ])->values()->toArray();
 
                 $opcionesCantones = Canton::query()
-                    ->whereHas('proyectos')
                     ->orderBy('nombre')
                     ->with('provincia:id,nombre')
                     ->get(['id', 'nombre', 'provincia_id'])
@@ -80,9 +76,6 @@ class PublicoController extends ApiController
 
                 $opcionesActores = ActorCooperacion::query()
                     ->where('estado', 'Activo')
-                    ->whereHas('proyectos', function ($q) {
-                        $q->whereIn('estado', ['En gestión', 'En ejecución', 'Finalizado']);
-                    })
                     ->orderBy('nombre')
                     ->get(['id', 'nombre', 'tipo'])
                     ->map(fn($a) => [
@@ -134,11 +127,17 @@ class PublicoController extends ApiController
 
         $queryProyectos = Proyecto::query()
             ->with([
-                'actor:id,nombre,tipo,pais_origen',
+                'actores:id,nombre,tipo,pais_origen',
                 'provincias:id,nombre',
                 'ods:id,numero,nombre,color_hex',
-                'ubicaciones' => function ($q) {
-                    $q->select('id', 'proyecto_id', 'nombre', DB::raw('ST_X(ubicacion::geometry) as lng'), DB::raw('ST_Y(ubicacion::geometry) as lat'));
+                'ubicaciones' => function ($q) use ($provinciaId, $cantonId) {
+                    $q->select('id', 'proyecto_id', 'canton_id', 'nombre', DB::raw('ST_X(ubicacion::geometry) as lng'), DB::raw('ST_Y(ubicacion::geometry) as lat'));
+                    
+                    if ($cantonId) {
+                        $q->where('canton_id', $cantonId);
+                    } elseif ($provinciaId) {
+                        $q->whereHas('canton', fn($c) => $c->where('provincia_id', $provinciaId));
+                    }
                 },
             ])
             ->whereIn('estado', ['En gestión', 'En ejecución', 'Finalizado']);
@@ -152,14 +151,14 @@ class PublicoController extends ApiController
         }
 
         if ($actorId) {
-            $queryProyectos->where('actor_id', $actorId);
+            $queryProyectos->whereHas('actores', fn($q) => $q->where('actores_cooperacion.id', $actorId));
         }
 
         $proyectos = $queryProyectos
             ->select([
                 'id', 'codigo', 'nombre', 'descripcion', 'estado', 'monto_total',
                 'moneda', 'sector_tematico', 'flujo_direccion', 'modalidad_cooperacion',
-                'fecha_inicio', 'fecha_fin_planificada', 'fecha_fin_real', 'actor_id',
+                'fecha_inicio', 'fecha_fin_planificada', 'fecha_fin_real',
             ])
             ->get()
             ->map(fn($p) => head($this->formatearProyecto($p)));
@@ -178,7 +177,7 @@ class PublicoController extends ApiController
         }
 
         if ($actorId) {
-            $queryEmblematicos->whereHas('proyecto', fn($q) => $q->where('actor_id', $actorId));
+            $queryEmblematicos->whereHas('proyecto', fn($q) => $q->whereHas('actores', fn($aq) => $aq->where('actores_cooperacion.id', $actorId)));
         }
 
         if ($cantonId && !$provinciaId && $provinciaInferida) {
@@ -228,7 +227,7 @@ class PublicoController extends ApiController
         }
 
         if ($actorId) {
-            $queryPracticas->whereHas('proyecto', fn($q) => $q->where('actor_id', $actorId));
+            $queryPracticas->whereHas('proyecto', fn($q) => $q->whereHas('actores', fn($aq) => $aq->where('actores_cooperacion.id', $actorId)));
         }
 
         $practicas = $queryPracticas
@@ -343,13 +342,14 @@ class PublicoController extends ApiController
 
                 $porTipoActor = Proyecto::query()
                     ->whereIn('proyectos.estado', $estados)
-                    ->join('actores_cooperacion', 'proyectos.actor_id', '=', 'actores_cooperacion.id')
-                    ->selectRaw('actores_cooperacion.tipo, COUNT(*) as total')
+                    ->join('proyecto_actor', 'proyectos.id', '=', 'proyecto_actor.proyecto_id')
+                    ->join('actores_cooperacion', 'proyecto_actor.actor_id', '=', 'actores_cooperacion.id')
+                    ->selectRaw('actores_cooperacion.tipo, COUNT(DISTINCT proyectos.id) as total')
                     ->groupBy('actores_cooperacion.tipo')
                     ->orderByDesc('total')
                     ->get()
                     ->map(fn($r) => [
-                        'tipo' => $r->tipo,
+                        'tipo'  => $r->tipo,
                         'total' => $r->total,
                     ])->values()->toArray();
 
@@ -393,7 +393,7 @@ class PublicoController extends ApiController
     {
         $proyecto = Proyecto::query()
             ->with([
-                'actor:id,nombre,tipo,pais_origen,sitio_web',
+                'actores:id,nombre,tipo,pais_origen,sitio_web',
                 'provincias:id,nombre',
                 'ods:id,numero,nombre,color_hex',
                 'ubicaciones' => function ($q) {
@@ -425,12 +425,20 @@ class PublicoController extends ApiController
                 'fecha_inicio' => $proyecto->fecha_inicio?->format('Y-m-d'),
                 'fecha_fin_planificada' => $proyecto->fecha_fin_planificada?->format('Y-m-d'),
                 'fecha_fin_real' => $proyecto->fecha_fin_real?->format('Y-m-d'),
-                'actor' => $proyecto->actor ? [
-                    'id' => $proyecto->actor->id,
-                    'nombre' => $proyecto->actor->nombre,
-                    'tipo' => $proyecto->actor->tipo,
-                    'pais_origen' => $proyecto->actor->pais_origen,
-                    'sitio_web' => $proyecto->actor->sitio_web,
+                'actores' => $proyecto->actores->map(fn($a) => [
+                    'id'         => $a->id,
+                    'nombre'     => $a->nombre,
+                    'tipo'       => $a->tipo,
+                    'pais_origen'=> $a->pais_origen,
+                    'sitio_web'  => $a->sitio_web,
+                ]),
+                // Retrocompatibilidad: primer actor
+                'actor' => $proyecto->actores->first() ? [
+                    'id'         => $proyecto->actores->first()->id,
+                    'nombre'     => $proyecto->actores->first()->nombre,
+                    'tipo'       => $proyecto->actores->first()->tipo,
+                    'pais_origen'=> $proyecto->actores->first()->pais_origen,
+                    'sitio_web'  => $proyecto->actores->first()->sitio_web,
                 ] : null,
                 'provincias' => $proyecto->provincias->map(fn($p) => [
                     'id' => $p->id,
@@ -484,11 +492,18 @@ class PublicoController extends ApiController
                 'flujo_direccion' => $proyecto->flujo_direccion,
                 'fecha_inicio' => $proyecto->fecha_inicio?->format('Y-m-d'),
                 'fecha_fin_planificada' => $proyecto->fecha_fin_planificada?->format('Y-m-d'),
-                'actor' => $proyecto->actor ? [
-                    'id' => $proyecto->actor->id,
-                    'nombre' => $proyecto->actor->nombre,
-                    'tipo' => $proyecto->actor->tipo,
-                    'pais_origen' => $proyecto->actor->pais_origen,
+                'actores' => $proyecto->actores->map(fn($a) => [
+                    'id'         => $a->id,
+                    'nombre'     => $a->nombre,
+                    'tipo'       => $a->tipo,
+                    'pais_origen'=> $a->pais_origen,
+                ]),
+                // Retrocompatibilidad: primer actor
+                'actor' => $proyecto->actores->first() ? [
+                    'id'         => $proyecto->actores->first()->id,
+                    'nombre'     => $proyecto->actores->first()->nombre,
+                    'tipo'       => $proyecto->actores->first()->tipo,
+                    'pais_origen'=> $proyecto->actores->first()->pais_origen,
                 ] : null,
                 'provincias' => $proyecto->provincias->map(fn($p) => [
                     'id' => $p->id,

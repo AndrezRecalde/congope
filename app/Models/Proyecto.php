@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 
 #[Table('proyectos')]
-#[Fillable('codigo', 'nombre', 'descripcion', 'actor_id', 'estado', 'monto_total', 'moneda', 'fecha_inicio', 'fecha_fin_planificada', 'fecha_fin_real', 'sector_tematico', 'flujo_direccion', 'modalidad_cooperacion', 'creado_por')]
+#[Fillable('codigo', 'nombre', 'descripcion', 'estado', 'monto_total', 'moneda', 'fecha_inicio', 'fecha_fin_planificada', 'fecha_fin_real', 'sector_tematico', 'flujo_direccion', 'modalidad_cooperacion', 'creado_por')]
 class Proyecto extends BaseModel
 {
     protected function casts(): array
@@ -24,9 +24,10 @@ class Proyecto extends BaseModel
     }
     use SoftDeletes, HasDocuments, FiltroProvincia;
 
-    public function actor()
+    public function actores()
     {
-        return $this->belongsTo(ActorCooperacion::class, 'actor_id');
+        // FK propia en pivot: proyecto_id  |  FK relacionada: actor_id
+        return $this->belongsToMany(ActorCooperacion::class, 'proyecto_actor', 'proyecto_id', 'actor_id');
     }
 
     public function provincias()

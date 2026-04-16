@@ -61,12 +61,12 @@ class DashboardService
                     ->groupBy('tipo')
                     ->pluck('total', 'tipo'),
             ],
-            'proyectos_destacados' => Proyecto::with(['actor', 'provincias'])->where('estado', 'En ejecución')->orderByDesc('monto_total')->take(5)->get()->map(function ($p) {
+            'proyectos_destacados' => Proyecto::with(['actores', 'provincias'])->where('estado', 'En ejecución')->orderByDesc('monto_total')->take(5)->get()->map(function ($p) {
                 return [
-                    'id' => $p->id,
-                    'nombre' => $p->nombre,
+                    'id'        => $p->id,
+                    'nombre'    => $p->nombre,
                     'inversion' => (string) $p->monto_total,
-                    'actor' => optional($p->actor)->nombre ?? 'No asignado',
+                    'actor'     => $p->actores->pluck('nombre')->join(', ') ?: 'No asignado',
                     'provincias' => $p->provincias->map(function ($prov) {
                         return ['nombre' => $prov->nombre, 'porcentaje_avance' => $prov->pivot->porcentaje_avance];
                     })->toArray()

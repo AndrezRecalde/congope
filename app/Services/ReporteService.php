@@ -104,7 +104,9 @@ class ReporteService
     {
         $actor = ActorCooperacion::findOrFail($actorId);
 
-        $proyectos = Proyecto::where('actor_id', $actorId)->get();
+        $proyectos = Proyecto::whereHas('actores', function ($q) use ($actorId) {
+            $q->where('actores_cooperacion.id', $actorId);
+        })->get();
 
         $datosVista = [
             'actor' => $actor,
@@ -174,7 +176,9 @@ class ReporteService
         }
 
         if (!empty($filtros['actor_id'])) {
-            $query->where('actor_id', $filtros['actor_id']);
+            $query->whereHas('actores', function ($q) use ($filtros) {
+                $q->where('actores_cooperacion.id', $filtros['actor_id']);
+            });
         }
 
         if (!empty($filtros['ods_id'])) {

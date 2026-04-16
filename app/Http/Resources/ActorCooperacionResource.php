@@ -24,6 +24,7 @@ class ActorCooperacionResource extends JsonResource
             'areas_tematicas' => $this->whenLoaded('areasTematicas', function () {
                 return $this->areasTematicas->pluck('area');
             }),
+            'notas' => $this->notas,
             'proyectos_count' => $this->whenCounted('proyectos'),
             'created_at' => $this->created_at ? $this->created_at->format('d/m/Y H:i') : null,
         ];

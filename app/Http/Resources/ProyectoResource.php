@@ -32,7 +32,12 @@ class ProyectoResource extends JsonResource
             'flujo_direccion' => $this->flujo_direccion,
             'modalidad_cooperacion' => $this->modalidad_cooperacion,
 
-            'actor' => new ActorCooperacionResource($this->whenLoaded('actor')),
+            'actores' => ActorCooperacionResource::collection($this->whenLoaded('actores')),
+            // Retrocompatibilidad: primer actor para consumidores que aún usen "actor"
+            'actor' => $this->whenLoaded('actores', function () {
+                $primero = $this->actores->first();
+                return $primero ? new ActorCooperacionResource($primero) : null;
+            }),
             'provincias' => $this->whenLoaded('provincias', function () {
                 return $this->provincias->map(function ($prov) {
                     return [

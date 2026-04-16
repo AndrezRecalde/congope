@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('codigo', 50)->unique();
             $table->string('nombre', 300);
             $table->text('descripcion')->nullable();
-            $table->foreignUuid('actor_id')->constrained('actores_cooperacion')->restrictOnDelete();
             $table->enum('estado', ['En gestión', 'En ejecución', 'Finalizado', 'Suspendido'])->default('En gestión');
             $table->decimal('monto_total', 15, 2)->nullable();
             $table->string('moneda', 3)->default('USD');
@@ -33,7 +32,6 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index('estado');
-            $table->index('actor_id');
             $table->index('creado_por');
             $table->index('fecha_inicio');
         });

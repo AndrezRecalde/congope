@@ -15,7 +15,8 @@ class ActorCooperacion extends BaseModel
 
     public function proyectos()
     {
-        return $this->hasMany(Proyecto::class, 'actor_id');
+        // FK propia en pivot: actor_id  |  FK relacionada: proyecto_id
+        return $this->belongsToMany(Proyecto::class, 'proyecto_actor', 'actor_id', 'proyecto_id');
     }
 
     public function areasTematicas()

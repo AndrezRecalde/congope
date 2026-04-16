@@ -13,7 +13,7 @@ class ProyectoService
 {
     public function listar(array $filtros, $usuario): LengthAwarePaginator
     {
-        $query = Proyecto::with(['provincias', 'ods', 'actor']);
+        $query = Proyecto::with(['provincias', 'ods', 'actores']);
 
         if (!$usuario->can('proyectos.ver_todas_provincias')) {
             $provinciaIds = $usuario->provincias()->pluck('provincias.id');
@@ -32,7 +32,9 @@ class ProyectoService
         }
 
         if (!empty($filtros['actor_id'])) {
-            $query->where('actor_id', $filtros['actor_id']);
+            $query->whereHas('actores', function ($q) use ($filtros) {
+                $q->where('actores_cooperacion.id', $filtros['actor_id']);
+            });
         }
 
         return $query->paginate(15);
@@ -40,7 +42,7 @@ class ProyectoService
 
     public function obtener(string $id, $usuario): Proyecto
     {
-        $query = Proyecto::with(['provincias', 'ubicaciones.canton', 'ods', 'actor', 'hitos', 'documentos']);
+        $query = Proyecto::with(['provincias', 'ubicaciones.canton', 'ods', 'actores', 'hitos', 'documentos']);
 
         if (!$usuario->can('proyectos.ver_todas_provincias')) {
             $provinciaIds = $usuario->provincias()->pluck('provincias.id');
@@ -61,7 +63,16 @@ class ProyectoService
                 $datos['codigo'] = 'PRJ-' . strtoupper(uniqid());
             }
 
+            // Extraer actor_ids antes de crear el proyecto (no es columna de la tabla)
+            $actorIds = $datos['actor_ids'] ?? [];
+            unset($datos['actor_ids']);
+
             $proyecto = Proyecto::create($datos);
+
+            // Sincronizar actores cooperantes (relación muchos-a-muchos)
+            if (!empty($actorIds)) {
+                $proyecto->actores()->sync($actorIds);
+            }
 
             if (isset($datos['provincias'])) {
                 $syncData = [];
@@ -106,7 +117,16 @@ class ProyectoService
     public function actualizar(Proyecto $proyecto, array $datos): Proyecto
     {
         return DB::transaction(function () use ($proyecto, $datos) {
+            // Extraer actor_ids antes de actualizar (no es columna de la tabla)
+            $actorIds = $datos['actor_ids'] ?? null;
+            unset($datos['actor_ids']);
+
             $proyecto->update($datos);
+
+            // Sincronizar actores si se enviaron
+            if ($actorIds !== null) {
+                $proyecto->actores()->sync($actorIds);
+            }
 
             if (isset($datos['provincias'])) {
                 $syncData = [];

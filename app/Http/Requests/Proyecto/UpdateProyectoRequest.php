@@ -17,7 +17,8 @@ class UpdateProyectoRequest extends FormRequest
             'codigo' => 'sometimes|nullable|string|max:50|unique:proyectos,codigo,' . $this->route('proyecto'),
             'nombre' => 'sometimes|required|string|max:500',
             'descripcion' => 'nullable|string',
-            'actor_id' => 'sometimes|required|uuid|exists:actores_cooperacion,id',
+            'actor_ids'   => 'sometimes|required|array|min:1',
+            'actor_ids.*' => 'uuid|exists:actores_cooperacion,id',
             'estado' => 'sometimes|required|string|in:En gestión,En ejecución,Finalizado,Suspendido',
             'monto_total' => 'sometimes|required|numeric|min:0',
             'moneda' => 'sometimes|required|string|max:10',
@@ -49,7 +50,8 @@ class UpdateProyectoRequest extends FormRequest
     {
         return [
             'nombre.required' => 'El nombre es obligatorio',
-            'actor_id.required' => 'El actor de cooperación es obligatorio',
+            'actor_ids.required' => 'Debe seleccionar al menos un actor de cooperación',
+            'actor_ids.min'      => 'Debe seleccionar al menos un actor de cooperación',
             'estado.required' => 'El estado es obligatorio',
             'monto_total.required' => 'El monto total es obligatorio',
             'moneda.required' => 'La moneda es obligatoria',
