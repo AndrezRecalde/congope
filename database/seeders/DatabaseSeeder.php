@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             OdsSeeder::class,
             DpaSeeder::class,
             AdminUserSeeder::class,
+            CategoriaBeneficiarioSeeder::class,
         ]);
     }
 }

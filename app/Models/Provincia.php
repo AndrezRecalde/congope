@@ -17,7 +17,7 @@ class Provincia extends BaseModel
     public function proyectos()
     {
         return $this->belongsToMany(Proyecto::class, 'proyecto_provincia')
-            ->withPivot(['rol', 'porcentaje_avance', 'beneficiarios_directos', 'beneficiarios_indirectos']);
+            ->withPivot(['rol', 'porcentaje_avance']);
     }
 
     public function cantones()

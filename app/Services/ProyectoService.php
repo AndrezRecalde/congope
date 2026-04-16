@@ -13,7 +13,7 @@ class ProyectoService
 {
     public function listar(array $filtros, $usuario): LengthAwarePaginator
     {
-        $query = Proyecto::with(['provincias', 'ods', 'actores']);
+        $query = Proyecto::with(['provincias', 'ods', 'actores', 'beneficiarios.categoria', 'beneficiarios.provincia']);
 
         if (!$usuario->can('proyectos.ver_todas_provincias')) {
             $provinciaIds = $usuario->provincias()->pluck('provincias.id');
@@ -42,7 +42,7 @@ class ProyectoService
 
     public function obtener(string $id, $usuario): Proyecto
     {
-        $query = Proyecto::with(['provincias', 'ubicaciones.canton', 'ods', 'actores', 'hitos', 'documentos']);
+        $query = Proyecto::with(['provincias', 'ubicaciones.canton', 'ods', 'actores', 'hitos', 'documentos', 'beneficiarios.categoria', 'beneficiarios.provincia']);
 
         if (!$usuario->can('proyectos.ver_todas_provincias')) {
             $provinciaIds = $usuario->provincias()->pluck('provincias.id');
@@ -78,13 +78,27 @@ class ProyectoService
                 $syncData = [];
                 foreach ($datos['provincias'] as $provincia) {
                     $syncData[$provincia['id']] = [
-                        'rol'                     => $provincia['rol'] ?? 'Beneficiaria',
-                        'porcentaje_avance'       => $provincia['porcentaje_avance'] ?? 0,
-                        'beneficiarios_directos'  => $provincia['beneficiarios_directos'] ?? null,
-                        'beneficiarios_indirectos' => $provincia['beneficiarios_indirectos'] ?? null,
+                        'rol'               => $provincia['rol'] ?? 'Beneficiaria',
+                        'porcentaje_avance' => $provincia['porcentaje_avance'] ?? 0,
                     ];
                 }
                 $proyecto->provincias()->sync($syncData);
+            }
+
+            // Sincronizar beneficiarios por categoría y provincia
+            if (isset($datos['beneficiarios'])) {
+                $proyecto->beneficiarios()->delete();
+                foreach ($datos['beneficiarios'] as $b) {
+                    if (!empty($b['categoria_id']) && !empty($b['provincia_id'])) {
+                        $proyecto->beneficiarios()->create([
+                            'provincia_id'              => $b['provincia_id'],
+                            'categoria_beneficiario_id' => $b['categoria_id'],
+                            'cantidad_directos'         => $b['cantidad_directos'] ?? null,
+                            'cantidad_indirectos'       => $b['cantidad_indirectos'] ?? null,
+                            'observaciones'             => $b['observaciones'] ?? null,
+                        ]);
+                    }
+                }
             }
 
             // Cada ubicación ahora lleva su canton_id explícito.
@@ -132,13 +146,27 @@ class ProyectoService
                 $syncData = [];
                 foreach ($datos['provincias'] as $provincia) {
                     $syncData[$provincia['id']] = [
-                        'rol'                     => $provincia['rol'] ?? 'Beneficiaria',
-                        'porcentaje_avance'       => $provincia['porcentaje_avance'] ?? 0,
-                        'beneficiarios_directos'  => $provincia['beneficiarios_directos'] ?? null,
-                        'beneficiarios_indirectos' => $provincia['beneficiarios_indirectos'] ?? null,
+                        'rol'               => $provincia['rol'] ?? 'Beneficiaria',
+                        'porcentaje_avance' => $provincia['porcentaje_avance'] ?? 0,
                     ];
                 }
                 $proyecto->provincias()->sync($syncData);
+            }
+
+            // Sincronizar beneficiarios por categoría y provincia
+            if (isset($datos['beneficiarios'])) {
+                $proyecto->beneficiarios()->delete();
+                foreach ($datos['beneficiarios'] as $b) {
+                    if (!empty($b['categoria_id']) && !empty($b['provincia_id'])) {
+                        $proyecto->beneficiarios()->create([
+                            'provincia_id'              => $b['provincia_id'],
+                            'categoria_beneficiario_id' => $b['categoria_id'],
+                            'cantidad_directos'         => $b['cantidad_directos'] ?? null,
+                            'cantidad_indirectos'       => $b['cantidad_indirectos'] ?? null,
+                            'observaciones'             => $b['observaciones'] ?? null,
+                        ]);
+                    }
+                }
             }
 
             // Reemplaza todas las ubicaciones; cada una lleva su canton_id.

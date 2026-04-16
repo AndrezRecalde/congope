@@ -30,6 +30,8 @@ Route::prefix('v1')->group(function () {
         Route::get('provincias', [\App\Http\Controllers\Api\V1\ProvinciaController::class, 'index'])->name('provincias.index');
         Route::get('cantones', [\App\Http\Controllers\Api\V1\CantonController::class, 'index'])->name('cantones.index');
         Route::get('parroquias', [\App\Http\Controllers\Api\V1\ParroquiaController::class, 'index'])->name('parroquias.index');
+        // Catálogo beneficiarios (público, solo lectura agrupada para el formulario)
+        Route::get('categorias-beneficiario', [\App\Http\Controllers\Api\V1\CategoriaBeneficiarioController::class, 'agrupadas'])->name('publico.categorias-beneficiario');
     });
 
     // Rutas protegidas genéricas
@@ -61,6 +63,10 @@ Route::prefix('v1')->group(function () {
         Route::get('proyectos/exportar', [\App\Http\Controllers\Api\V1\ProyectoController::class, 'exportar'])->name('proyectos.exportar');
         Route::patch('proyectos/{proyecto}/estado', [\App\Http\Controllers\Api\V1\ProyectoController::class, 'cambiarEstado'])->name('proyectos.cambiar_estado');
         Route::apiResource('proyectos', \App\Http\Controllers\Api\V1\ProyectoController::class);
+
+        // Categorías de Beneficiarios
+        Route::get('categorias-beneficiario/agrupadas', [\App\Http\Controllers\Api\V1\CategoriaBeneficiarioController::class, 'agrupadas'])->name('categorias-beneficiario.agrupadas');
+        Route::apiResource('categorias-beneficiario', \App\Http\Controllers\Api\V1\CategoriaBeneficiarioController::class);
 
         // Hitos de Proyecto
         Route::prefix('proyectos/{proyecto}')->group(function () {

@@ -41,12 +41,26 @@ class ProyectoResource extends JsonResource
             'provincias' => $this->whenLoaded('provincias', function () {
                 return $this->provincias->map(function ($prov) {
                     return [
-                        'id' => $prov->id,
-                        'nombre' => $prov->nombre,
-                        'rol' => $prov->pivot->rol ?? null,
+                        'id'                => $prov->id,
+                        'nombre'            => $prov->nombre,
+                        'rol'               => $prov->pivot->rol ?? null,
                         'porcentaje_avance' => $prov->pivot->porcentaje_avance ?? null,
-                        'beneficiarios_directos' => $prov->pivot->beneficiarios_directos ?? null,
-                        'beneficiarios_indirectos' => $prov->pivot->beneficiarios_indirectos ?? null,
+                    ];
+                });
+            }),
+
+            'beneficiarios' => $this->whenLoaded('beneficiarios', function () {
+                return $this->beneficiarios->map(function ($b) {
+                    return [
+                        'id'                   => $b->id,
+                        'provincia_id'         => $b->provincia_id,
+                        'provincia_nombre'     => $b->provincia?->nombre,
+                        'categoria_id'         => $b->categoria_beneficiario_id,
+                        'categoria_nombre'     => $b->categoria?->nombre,
+                        'categoria_grupo'      => $b->categoria?->grupo,
+                        'cantidad_directos'    => $b->cantidad_directos,
+                        'cantidad_indirectos'  => $b->cantidad_indirectos,
+                        'observaciones'        => $b->observaciones,
                     ];
                 });
             }),

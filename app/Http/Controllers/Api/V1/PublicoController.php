@@ -400,6 +400,8 @@ class PublicoController extends ApiController
                     $q->select('id', 'proyecto_id', 'nombre', DB::raw('ST_X(ubicacion::geometry) as lng'), DB::raw('ST_Y(ubicacion::geometry) as lat'));
                 },
                 'hitos' => fn($q) => $q->select('id', 'proyecto_id', 'titulo', 'fecha_limite', 'completado', 'completado_en')->orderBy('fecha_limite'),
+                'beneficiarios.categoria:id,nombre,grupo',
+                'beneficiarios.provincia:id,nombre',
             ])
             ->whereIn('estado', ['En gestión', 'En ejecución', 'Finalizado'])
             ->findOrFail($id);
@@ -441,21 +443,19 @@ class PublicoController extends ApiController
                     'sitio_web'  => $proyecto->actores->first()->sitio_web,
                 ] : null,
                 'provincias' => $proyecto->provincias->map(fn($p) => [
-                    'id' => $p->id,
-                    'nombre' => $p->nombre,
-                    'rol' => $p->pivot->rol,
+                    'id'                => $p->id,
+                    'nombre'            => $p->nombre,
+                    'rol'               => $p->pivot->rol,
                     'porcentaje_avance' => $p->pivot->porcentaje_avance,
-                    'beneficiarios_directos' => $p->pivot->beneficiarios_directos,
-                    'beneficiarios_indirectos' => $p->pivot->beneficiarios_indirectos,
                 ]),
                 'ods' => $proyecto->ods->map(fn($o) => [
-                    'id' => $o->id,
-                    'numero' => $o->numero,
-                    'nombre' => $o->nombre,
+                    'id'        => $o->id,
+                    'numero'    => $o->numero,
+                    'nombre'    => $o->nombre,
                     'color_hex' => $o->color_hex,
                 ]),
                 'ubicaciones' => $proyecto->ubicaciones->map(fn($u) => [
-                    'id' => $u->id,
+                    'id'     => $u->id,
                     'nombre' => $u->nombre,
                     'coordenadas' => [
                         'lat' => (float) $u->lat,
@@ -463,13 +463,33 @@ class PublicoController extends ApiController
                     ],
                 ]),
                 'avance' => [
-                    'hitos_total' => $hitosTotal,
+                    'hitos_total'       => $hitosTotal,
                     'hitos_completados' => $hitosCompletados,
-                    'porcentaje' => $hitosTotal > 0 ? round(($hitosCompletados / $hitosTotal) * 100) : null,
+                    'porcentaje'        => $hitosTotal > 0 ? round(($hitosCompletados / $hitosTotal) * 100) : null,
                 ],
+                // Beneficiarios agrupados por provincia
+                'beneficiarios_por_provincia' => $proyecto->provincias->map(function ($prov) use ($proyecto) {
+                    $items = $proyecto->beneficiarios
+                        ->where('provincia_id', $prov->id)
+                        ->values();
+                    return [
+                        'provincia_id'   => $prov->id,
+                        'provincia_nombre' => $prov->nombre,
+                        'total_directos'   => $items->sum('cantidad_directos'),
+                        'total_indirectos' => $items->sum('cantidad_indirectos'),
+                        'categorias'       => $items->map(fn($b) => [
+                            'categoria_nombre'   => $b->categoria?->nombre,
+                            'categoria_grupo'    => $b->categoria?->grupo,
+                            'cantidad_directos'  => $b->cantidad_directos,
+                            'cantidad_indirectos'=> $b->cantidad_indirectos,
+                            'observaciones'      => $b->observaciones,
+                        ])->values(),
+                    ];
+                })->filter(fn($g) => count($g['categorias']) > 0)->values(),
+                // Totales globales
                 'beneficiarios' => [
-                    'directos' => (int) $proyecto->provincias->sum('pivot.beneficiarios_directos'),
-                    'indirectos' => (int) $proyecto->provincias->sum('pivot.beneficiarios_indirectos'),
+                    'directos'   => $proyecto->beneficiarios->sum('cantidad_directos'),
+                    'indirectos' => $proyecto->beneficiarios->sum('cantidad_indirectos'),
                 ],
             ],
         ]);

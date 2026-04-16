@@ -30,10 +30,15 @@ class Proyecto extends BaseModel
         return $this->belongsToMany(ActorCooperacion::class, 'proyecto_actor', 'proyecto_id', 'actor_id');
     }
 
+    public function beneficiarios()
+    {
+        return $this->hasMany(ProyectoBeneficiario::class);
+    }
+
     public function provincias()
     {
         return $this->belongsToMany(Provincia::class, 'proyecto_provincia')
-            ->withPivot(['rol', 'porcentaje_avance', 'beneficiarios_directos', 'beneficiarios_indirectos']);
+            ->withPivot(['rol', 'porcentaje_avance']);
     }
 
     public function cantones()

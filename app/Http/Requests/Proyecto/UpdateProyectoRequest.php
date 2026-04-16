@@ -33,8 +33,6 @@ class UpdateProyectoRequest extends FormRequest
             'provincias.*.id' => 'required|uuid|exists:provincias,id',
             'provincias.*.rol' => 'nullable|string|in:Líder,Co-ejecutora,Beneficiaria',
             'provincias.*.porcentaje_avance' => 'nullable|integer|min:0|max:100',
-            'provincias.*.beneficiarios_directos' => 'nullable|integer|min:0',
-            'provincias.*.beneficiarios_indirectos' => 'nullable|integer|min:0',
             'canton_ids' => 'prohibited',
             'ubicaciones' => 'nullable|array',
             'ubicaciones.*.canton_id' => 'required_with:ubicaciones|uuid|exists:cantones,id',
@@ -43,6 +41,12 @@ class UpdateProyectoRequest extends FormRequest
             'ubicaciones.*.lng' => 'required_with:ubicaciones|numeric|between:-180,180',
             'ods_ids' => 'nullable|array',
             'ods_ids.*' => 'integer|exists:ods,id',
+            'beneficiarios' => 'nullable|array',
+            'beneficiarios.*.provincia_id' => 'required_with:beneficiarios|uuid|exists:provincias,id',
+            'beneficiarios.*.categoria_id' => 'required_with:beneficiarios|integer|exists:categorias_beneficiario,id',
+            'beneficiarios.*.cantidad_directos' => 'nullable|integer|min:0',
+            'beneficiarios.*.cantidad_indirectos' => 'nullable|integer|min:0',
+            'beneficiarios.*.observaciones' => 'nullable|string|max:500',
         ];
     }
 
