@@ -42,6 +42,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'mapa' => ['ver', 'ver_todas_capas', 'exportar'],
             'dashboard' => ['ver', 'ver_global'],
             'reportes' => ['generar', 'exportar_masivo'],
+            'categorias_beneficiarios' => ['ver', 'crear', 'editar', 'eliminar'],
         ];
 
         $flattenedPermissions = [];
@@ -58,57 +59,107 @@ class RolesAndPermissionsSeeder extends Seeder
         $superAdmin->givePermissionTo(Permission::all());
 
         $adminProvincialExcluded = [
-            'usuarios.crear', 'usuarios.eliminar', 'usuarios.asignar_rol', 'usuarios.asignar_provincia', 'usuarios.ver_auditoria',
+            'usuarios.crear',
+            'usuarios.eliminar',
+            'usuarios.asignar_rol',
+            'usuarios.asignar_provincia',
+            'usuarios.ver_auditoria',
             'actores.eliminar',
-            'proyectos.eliminar', 'proyectos.ver_todas_provincias',
-            'practicas.eliminar', 'practicas.destacar',
-            'redes.crear', 'redes.editar', 'redes.eliminar', 'redes.gestionar_miembros',
-            'emblematicos.crear', 'emblematicos.editar', 'emblematicos.eliminar', 'emblematicos.publicar',
-            'reconocimientos.crear', 'reconocimientos.editar', 'reconocimientos.eliminar',
-            'documentos.eliminar', 'documentos.publicar', 'documentos.ver_todas_provincias',
+            'proyectos.eliminar',
+            'proyectos.ver_todas_provincias',
+            'practicas.eliminar',
+            'practicas.destacar',
+            'redes.crear',
+            'redes.editar',
+            'redes.eliminar',
+            'redes.gestionar_miembros',
+            'emblematicos.crear',
+            'emblematicos.editar',
+            'emblematicos.eliminar',
+            'emblematicos.publicar',
+            'reconocimientos.crear',
+            'reconocimientos.editar',
+            'reconocimientos.eliminar',
+            'documentos.eliminar',
+            'documentos.publicar',
+            'documentos.ver_todas_provincias',
             'eventos.eliminar',
             'mapa.ver_todas_capas',
             'dashboard.ver_global',
-            'reportes.exportar_masivo'
+            'reportes.exportar_masivo',
+            'categorias_beneficiarios.crear',
+            'categorias_beneficiarios.editar',
+            'categorias_beneficiarios.eliminar',
         ];
-        
+
         $adminProvincial = Role::where('name', 'admin_provincial')->first();
         $adminProvincialPermissions = array_diff($flattenedPermissions, $adminProvincialExcluded);
         $adminProvincial->givePermissionTo($adminProvincialPermissions);
 
         $editor = Role::where('name', 'editor')->first();
         $editor->givePermissionTo([
-            'actores.ver', 'actores.crear', 'actores.editar', 'actores.exportar',
-            'proyectos.ver', 'proyectos.crear', 'proyectos.editar', 'proyectos.exportar',
-            'hitos.crear', 'hitos.editar', 'hitos.completar',
-            'practicas.ver', 'practicas.crear', 'practicas.editar', 'practicas.valorar', 'practicas.exportar',
+            'actores.ver',
+            'actores.crear',
+            'actores.editar',
+            'actores.exportar',
+            'proyectos.ver',
+            'proyectos.crear',
+            'proyectos.editar',
+            'proyectos.exportar',
+            'hitos.crear',
+            'hitos.editar',
+            'hitos.completar',
+            'practicas.ver',
+            'practicas.crear',
+            'practicas.editar',
+            'practicas.valorar',
+            'practicas.exportar',
             'redes.ver',
             'emblematicos.ver',
-            'documentos.ver', 'documentos.subir', 'documentos.editar',
-            'eventos.ver', 'eventos.crear', 'eventos.editar', 'eventos.gestionar_participantes',
-            'compromisos.crear', 'compromisos.resolver',
-            'mapa.ver', 'mapa.exportar',
-            'dashboard.ver', 'reportes.generar', 'usuarios.ver'
+            'documentos.ver',
+            'documentos.subir',
+            'documentos.editar',
+            'eventos.ver',
+            'eventos.crear',
+            'eventos.editar',
+            'eventos.gestionar_participantes',
+            'compromisos.crear',
+            'compromisos.resolver',
+            'mapa.ver',
+            'mapa.exportar',
+            'dashboard.ver',
+            'reportes.generar',
+            'usuarios.ver',
+            'categorias_beneficiarios.ver',
         ]);
 
         $visualizador = Role::where('name', 'visualizador')->first();
         $visualizador->givePermissionTo([
-            'actores.ver', 'actores.exportar',
-            'proyectos.ver', 'proyectos.exportar', 'proyectos.ver_todas_provincias',
-            'practicas.ver', 'practicas.exportar',
+            'actores.ver',
+            'actores.exportar',
+            'proyectos.ver',
+            'proyectos.exportar',
+            'proyectos.ver_todas_provincias',
+            'practicas.ver',
+            'practicas.exportar',
             'redes.ver',
             'emblematicos.ver',
             'documentos.ver',
             'eventos.ver',
-            'mapa.ver', 'mapa.ver_todas_capas', 'mapa.exportar',
-            'dashboard.ver', 'dashboard.ver_global',
+            'mapa.ver',
+            'mapa.ver_todas_capas',
+            'mapa.exportar',
+            'dashboard.ver',
+            'dashboard.ver_global',
             'reportes.generar'
         ]);
 
         $publico = Role::where('name', 'publico')->first();
         $publico->givePermissionTo([
-            'practicas.ver', 'emblematicos.ver',
-            'mapa.ver', 'reportes.generar'
+            'practicas.ver',
+            'emblematicos.ver',
+            'mapa.ver',
+            'reportes.generar'
         ]);
     }
 }
