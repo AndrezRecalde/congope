@@ -139,16 +139,74 @@ class UsuarioController extends ApiController
     {
         Gate::authorize('verAuditoria', User::class);
 
-        $logs = RegistroAuditoria::query()
-            ->when($request->user_id, fn($q) => $q->where('user_id', $request->user_id))
-            ->when($request->modelo_tipo, fn($q) => $q->where('modelo_tipo', $request->modelo_tipo))
-            ->when($request->accion, fn($q) => $q->where('accion', $request->accion))
-            ->when($request->fecha_desde, fn($q) => $q->whereDate('created_at', '>=', $request->fecha_desde))
-            ->when($request->fecha_hasta, fn($q) => $q->whereDate('created_at', '<=', $request->fecha_hasta))
+        $query = RegistroAuditoria::query()
             ->with(['usuario:id,name,email'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->orderByDesc('created_at');
 
-        return $this->respondPaginated($logs, 'Registros de auditoría');
+        if ($request->filled('modelo_id')) {
+            $query->where('modelo_id', $request->modelo_id);
+        }
+
+        if ($request->filled('modelo_tipo')) {
+            $tipo = $request->modelo_tipo;
+            if (!str_contains($tipo, '\\')) {
+                $query->where('modelo_tipo', 'like', "%\\{$tipo}");
+            } else {
+                $query->where('modelo_tipo', $tipo);
+            }
+        }
+
+        if ($request->filled('accion')) {
+            $query->where('accion', $request->accion);
+        }
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('created_at', '>=', $request->fecha_desde);
+        } elseif ($request->filled('desde')) {
+            $query->whereDate('created_at', '>=', $request->desde);
+        }
+
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('created_at', '<=', $request->fecha_hasta);
+        } elseif ($request->filled('hasta')) {
+            $query->whereDate('created_at', '<=', $request->hasta);
+        }
+
+        $perPage = $request->integer('per_page', 20);
+        $registros = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Registros de auditoría',
+            'data'    => $registros->map(
+                fn($r) => [
+                    'id'      => $r->id,
+                    'user_id' => $r->user_id,
+                    'accion'  => $r->accion,
+                    'modelo_tipo' => $r->modelo_tipo,
+                    'modelo_id'   => $r->modelo_id,
+                    'valores_anteriores' => $r->valores_anteriores,
+                    'valores_nuevos' => $r->valores_nuevos,
+                    'ip_address' => $r->ip_address,
+                    'user_agent' => $r->user_agent,
+                    'created_at' => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->format('Y-m-d H:i:s') : null,
+                    'usuario' => $r->usuario ? [
+                        'id'    => $r->usuario->id,
+                        'name'  => $r->usuario->name,
+                        'email' => $r->usuario->email,
+                    ] : null,
+                ]
+            ),
+            'meta' => [
+                'current_page' => $registros->currentPage(),
+                'last_page'    => $registros->lastPage(),
+                'per_page'     => $registros->perPage(),
+                'total'        => $registros->total(),
+            ],
+        ]);
     }
 }

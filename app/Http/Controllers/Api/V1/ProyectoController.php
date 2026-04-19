@@ -10,6 +10,8 @@ use App\Http\Requests\Proyecto\UpdateProyectoRequest;
 use App\Http\Resources\ProyectoResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Http\JsonResponse;
+use App\Models\RegistroAuditoria;
 
 class ProyectoController extends ApiController
 {
@@ -82,5 +84,113 @@ class ProyectoController extends ApiController
 
         $filtros = $request->only(['search', 'estado', 'actor_id']);
         return $this->service->exportarExcel($filtros);
+    }
+
+    /**
+     * GET /api/v1/proyectos/:id/historial
+     *
+     * Devuelve el historial completo de cambios de
+     * un proyecto específico, incluyendo cambios en
+     * sus entidades relacionadas:
+     *   - El proyecto mismo
+     *   - Sus hitos (HitoProyecto)
+     *   - Sus emblemáticos relacionados
+     *   - Sus documentos
+     *
+     * Ordenado por fecha descendente (más reciente
+     * primero) para funcionar como línea de tiempo.
+     */
+    public function historial(Request $request, string $id): JsonResponse
+    {
+        $proyecto = Proyecto::findOrFail($id);
+
+        if (!$request->user()->can('verAuditoria', \App\Models\User::class) && !$request->user()->can('view', $proyecto)) {
+            abort(403, 'Sin permiso para ver el historial');
+        }
+
+        $perPage = $request->integer('per_page', 15);
+
+        $hitosIds = $proyecto->hitos()->pluck('id')->toArray();
+        
+        $emblematicosIds = \App\Models\ProyectoEmblematico::where('proyecto_id', $id)
+            ->pluck('id')
+            ->toArray();
+
+        $registros = RegistroAuditoria::query()
+            ->with(['usuario:id,name,email'])
+            ->where(function ($q) use ($id, $hitosIds, $emblematicosIds) {
+                $q->where(function ($sub) use ($id) {
+                    $sub->where('modelo_id', $id)
+                        ->where('modelo_tipo', 'like', '%Proyecto');
+                });
+
+                if (!empty($hitosIds)) {
+                    $q->orWhere(function ($sub) use ($hitosIds) {
+                        $sub->whereIn('modelo_id', $hitosIds)
+                            ->where('modelo_tipo', 'like', '%Hito%');
+                    });
+                }
+
+                if (!empty($emblematicosIds)) {
+                    $q->orWhere(function ($sub) use ($emblematicosIds) {
+                        $sub->whereIn('modelo_id', $emblematicosIds)
+                            ->where('modelo_tipo', 'like', '%Emblematico%');
+                    });
+                }
+            })
+            ->orderByDesc('created_at')
+            ->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Historial del proyecto",
+            'data'    => $registros->map(
+                fn($r) => [
+                    'id'      => $r->id,
+                    'accion'  => $r->accion,
+                    'entidad' => $this->nombreAmigable($r->modelo_tipo),
+                    'modelo_tipo'        => $r->modelo_tipo,
+                    'modelo_id'          => $r->modelo_id,
+                    'valores_anteriores' => $r->valores_anteriores,
+                    'valores_nuevos'     => $r->valores_nuevos,
+                    'ip_address'         => $r->ip_address,
+                    'created_at'         => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->format('Y-m-d H:i:s') : null,
+                    'usuario' => $r->usuario ? [
+                        'id'    => $r->usuario->id,
+                        'name'  => $r->usuario->name,
+                        'email' => $r->usuario->email,
+                    ] : null,
+                ]
+            ),
+            'meta' => [
+                'current_page' => $registros->currentPage(),
+                'last_page'    => $registros->lastPage(),
+                'per_page'     => $registros->perPage(),
+                'total'        => $registros->total(),
+            ],
+            'proyecto' => [
+                'id'     => $proyecto->id,
+                'codigo' => $proyecto->codigo ?? null,
+                'nombre' => $proyecto->nombre,
+            ],
+        ]);
+    }
+
+    /**
+     * Convierte el namespace PHP de un modelo
+     * en un nombre amigable para mostrar al usuario.
+     */
+    private function nombreAmigable(string $modeloTipo): string
+    {
+        $nombre = class_basename($modeloTipo);
+        return match ($nombre) {
+            'Proyecto'           => 'Proyecto',
+            'HitoProyecto'       => 'Hito',
+            'ProyectoEmblematico'=> 'Emblemático',
+            'Documento'          => 'Documento',
+            'ProyectoOds'        => 'ODS',
+            'ProyectoProvincia'  => 'Provincia',
+            default              => $nombre,
+        };
     }
 }
