@@ -38,8 +38,11 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         // Usuarios
         Route::apiResource('usuarios', \App\Http\Controllers\Api\V1\UsuarioController::class);
+        Route::patch('usuarios/{usuario}/estado', [\App\Http\Controllers\Api\V1\UsuarioController::class, 'cambiarEstado'])->name('usuarios.estado');
+        Route::post('usuarios/{usuario}/reset-password', [\App\Http\Controllers\Api\V1\UsuarioController::class, 'resetPassword'])->name('usuarios.reset_password');
         Route::patch('usuarios/{usuario}/rol', [\App\Http\Controllers\Api\V1\UsuarioController::class, 'asignarRol'])->name('usuarios.rol');
         Route::patch('usuarios/{usuario}/provincias', [\App\Http\Controllers\Api\V1\UsuarioController::class, 'asignarProvincias'])->name('usuarios.provincias');
+        Route::post('usuarios/me/password', [\App\Http\Controllers\Api\V1\UsuarioController::class, 'updatePassword'])->name('usuarios.update_password');
         Route::get('auditoria', [\App\Http\Controllers\Api\V1\UsuarioController::class, 'auditoria'])->name('auditoria.index');
 
         // Provincias (catálogo, solo lectura + consultas)

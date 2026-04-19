@@ -29,6 +29,10 @@ class AuthController extends ApiController
             return $this->respondUnauthorized('Credenciales incorrectas');
         }
 
+        if (!$user->activo) {
+            return $this->respondUnauthorized('Su cuenta está desactivada. Por favor contacte al administrador.');
+        }
+
         $user->tokens()->delete();
         $token = $user->createToken('congope_token');
 
@@ -38,6 +42,7 @@ class AuthController extends ApiController
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'requires_password_change' => $user->requires_password_change,
                 'roles' => $user->getRoleNames(),
                 'permissions' => $user->getAllPermissions()->pluck('name'),
                 'provincias' => $user->provincias()->pluck('provincias.nombre', 'provincias.id'),
@@ -59,6 +64,7 @@ class AuthController extends ApiController
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
+            'requires_password_change' => $user->requires_password_change,
             'roles' => $user->getRoleNames(),
             'permissions' => $user->getAllPermissions()->pluck('name'),
             'provincias' => $user->provincias()->pluck('provincias.nombre', 'provincias.id'),

@@ -15,6 +15,12 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'telefono',
+        'cargo',
+        'activo',
+        'entidad',
+        'dni',
+        'requires_password_change',
         //'two_factor_enabled',
     ];
 
@@ -35,6 +41,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'activo' => 'boolean',
+            'requires_password_change' => 'boolean',
             //'two_factor_enabled' => 'boolean',
         ];
     }

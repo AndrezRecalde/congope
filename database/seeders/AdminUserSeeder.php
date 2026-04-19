@@ -19,6 +19,9 @@ class AdminUserSeeder extends Seeder
             [
                 'name' => 'Super Admin CONGOPE',
                 'password' => Hash::make('Admin@2025!'),
+                'telefono' => '0999999999',
+                'cargo' => 'Super Administrador',
+                'activo' => true,
             ]
         );
 

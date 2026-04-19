@@ -92,6 +92,49 @@ class UsuarioController extends ApiController
         );
     }
 
+    public function cambiarEstado(User $usuario): JsonResponse
+    {
+        Gate::authorize('update', $usuario);
+
+        $usuario = $this->service->cambiarEstado($usuario);
+
+        return $this->respondSuccess(
+            new UsuarioResource($usuario),
+            'Estado de usuario actualizado correctamente'
+        );
+    }
+
+    public function resetPassword(Request $request, User $usuario): JsonResponse
+    {
+        Gate::authorize('update', $usuario);
+        
+        $request->validate(['enviar_correo' => 'boolean']);
+        $enviarCorreo = $request->input('enviar_correo', false);
+
+        $usuario = $this->service->resetearContrasena($usuario, $enviarCorreo);
+
+        return $this->respondSuccess(
+            new UsuarioResource($usuario),
+            'Contraseña reseteada correctamente'
+        );
+    }
+
+    public function updatePassword(\App\Http\Requests\Usuario\UpdatePasswordRequest $request): JsonResponse
+    {
+        $usuario = $request->user();
+        
+        try {
+            $this->service->actualizarContrasena($usuario, $request->validated());
+            
+            return $this->respondSuccess(
+                null,
+                'Contraseña actualizada correctamente'
+            );
+        } catch (\Exception $e) {
+            return $this->respondError($e->getMessage(), 400);
+        }
+    }
+
     public function auditoria(Request $request): JsonResponse
     {
         Gate::authorize('verAuditoria', User::class);
