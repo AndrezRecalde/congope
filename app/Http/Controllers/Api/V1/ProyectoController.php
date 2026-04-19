@@ -8,6 +8,8 @@ use App\Services\ProyectoService;
 use App\Http\Requests\Proyecto\StoreProyectoRequest;
 use App\Http\Requests\Proyecto\UpdateProyectoRequest;
 use App\Http\Resources\ProyectoResource;
+use App\Exports\ProyectosExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\JsonResponse;
@@ -78,12 +80,52 @@ class ProyectoController extends ApiController
         return $this->respondSuccess(new ProyectoResource($proyecto), 'Estado del proyecto cambiado exitosamente');
     }
 
-    public function exportar(Request $request)
+    /**
+     * GET /api/v1/proyectos/exportar
+     *
+     * Exporta el listado de proyectos a Excel (.xlsx).
+     * Genera un archivo con 4 hojas:
+     *   1. Proyectos      → datos principales
+     *   2. Actores Cooperantes
+     *   3. ODS
+     *   4. Beneficiarios
+     *
+     * Acepta los mismos query params del listado
+     * para filtrar qué proyectos se exportan:
+     *   ?estado=En ejecución
+     *   ?sector_tematico=Saneamiento
+     *   ?flujo_direccion=Sur-Sur
+     *   ?actor_id=uuid
+     *   ?provincia_id=uuid
+     *   ?search=texto
+     *
+     * Permiso requerido: proyectos.exportar
+     */
+    public function exportar(Request $request): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
         Gate::authorize('exportar', Proyecto::class);
 
-        $filtros = $request->only(['search', 'estado', 'actor_id']);
-        return $this->service->exportarExcel($filtros);
+        // Recoger los filtros del request
+        // (los mismos que usa el método index)
+        $filtros = array_filter([
+            'estado'           => $request->estado,
+            'sector_tematico'  => $request->sector_tematico,
+            'flujo_direccion'  => $request->flujo_direccion,
+            'actor_id'         => $request->actor_id,
+            'provincia_id'     => $request->provincia_id,
+            'search'           => $request->search,
+        ]);
+
+        // Nombre del archivo con fecha actual
+        $fecha    = now()->format('Y-m-d');
+        $filename = "proyectos-congope-{$fecha}.xlsx";
+
+        return Excel::download(
+            new ProyectosExport($filtros),
+            $filename,
+            \Maatwebsite\Excel\Excel::XLSX,
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        );
     }
 
     /**
