@@ -749,4 +749,251 @@ class PublicoController extends ApiController
             ],
         ]);
     }
+
+    /**
+     * GET /api/v1/publico/comparar
+     *
+     * Estadísticas comparativas de 2 o 3 provincias.
+     * Endpoint público — sin autenticación.
+     *
+     * ?provincia_ids[]=uuid1&provincia_ids[]=uuid2
+     */
+    public function compararProvincias(
+        Request $request
+    ): JsonResponse {
+        $request->validate([
+            'provincia_ids'   => [
+                'required',
+                'array',
+                'min:2',
+                'max:3',
+            ],
+            'provincia_ids.*' => [
+                'required',
+                'uuid',
+                'exists:provincias,id',
+            ],
+        ], [
+            'provincia_ids.required' =>
+                'Debes seleccionar al menos 2 provincias.',
+            'provincia_ids.array'    =>
+                'El formato de provincias es inválido.',
+            'provincia_ids.min'      =>
+                'Debes seleccionar entre 2 y 3 provincias.',
+            'provincia_ids.max'      =>
+                'Puedes comparar máximo 3 provincias.',
+            'provincia_ids.*.uuid'   =>
+                'Uno o más IDs de provincia son inválidos.',
+            'provincia_ids.*.exists' =>
+                'Una o más provincias no existen.',
+        ]);
+
+        $ids = $request->input('provincia_ids', []);
+
+        // Eliminar duplicados por si el cliente
+        // envía el mismo ID dos veces
+        $ids = array_unique($ids);
+
+        if (count($ids) < 2) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors'  => [
+                    'provincia_ids' => [
+                        'Debes seleccionar provincias distintas.',
+                    ],
+                ],
+            ], 422);
+        }
+
+        // Obtener datos de cada provincia en paralelo
+        $provincias = Provincia::whereIn('id', $ids)
+            ->get();
+
+        // Mantener el orden en que el usuario
+        // seleccionó las provincias
+        $provincias = collect($ids)->map(
+            fn($id) => $provincias->firstWhere('id', $id)
+        )->filter();
+
+        $resultado = $provincias->map(
+            fn($provincia) =>
+                $this->estadisticasProvincia($provincia)
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Comparación de provincias',
+            'data'    => $resultado->values(),
+        ]);
+    }
+
+    /**
+     * Calcula las estadísticas completas de una
+     * provincia para el comparador.
+     * Consulta separada por provincia para claridad.
+     */
+    private function estadisticasProvincia(
+        Provincia $provincia
+    ): array {
+        $provinciaId = $provincia->id;
+
+        // ── Proyectos de esta provincia ──────────────
+        // Proyectos donde esta provincia participa
+        // (como líder, co-ejecutora o beneficiaria)
+        $proyectosQuery = Proyecto::query()
+            ->whereHas(
+                'provincias',
+                fn($q) => $q->where('provincias.id', $provinciaId)
+            )
+            ->whereNull('deleted_at');
+
+        $totalProyectos   = $proyectosQuery->count();
+        $proyectosPorEstado = $proyectosQuery
+            ->groupBy('estado')
+            ->selectRaw('estado, count(*) as total')
+            ->pluck('total', 'estado')
+            ->toArray();
+
+        // ── Monto total de cooperación ────────────────
+        $montoTotal = $proyectosQuery
+            ->sum('monto_total');
+
+        // ── ODS más frecuentes (top 3) ───────────────
+        $odsTop = Ods::select(['id', 'numero', 'nombre', 'color_hex'])
+            ->withCount([
+                'proyectos as total_proyectos' => fn($q) =>
+                    $q->whereHas(
+                        'provincias',
+                        fn($p) => $p->where('provincias.id', $provinciaId)
+                    )->whereNull('proyectos.deleted_at'),
+            ])
+            ->whereHas('proyectos', fn($q) =>
+                $q->whereHas(
+                    'provincias',
+                    fn($p) => $p->where('provincias.id', $provinciaId)
+                )->whereNull('proyectos.deleted_at')
+            )
+            ->orderByDesc('total_proyectos')
+            ->limit(3)
+            ->get();
+
+        // ── Actores cooperantes únicos ───────────────
+        $actoresCount = ActorCooperacion::query()
+            ->whereHas(
+                'proyectos',
+                fn($q) => $q
+                    ->whereHas(
+                        'provincias',
+                        fn($p) => $p->where(
+                            'provincias.id', $provinciaId
+                        )
+                    )
+                    ->whereNull('proyectos.deleted_at')
+            )
+            ->count();
+
+        // ── Emblemáticos ─────────────────────────────
+        $emblematicosCount = ProyectoEmblematico::query()
+            ->where('provincia_id', $provinciaId)
+            ->where('es_publico', true)
+            ->whereNull('deleted_at')
+            ->count();
+
+        // ── Buenas prácticas ─────────────────────────
+        $practicasCount = BuenaPractica::query()
+            ->where('provincia_id', $provinciaId)
+            ->where('es_destacada', true)
+            ->whereNull('deleted_at')
+            ->count();
+
+        // ── Distribución por flujo ───────────────────
+        $flujosPosibles = [
+            'Norte-Sur', 'Sur-Sur', 'Triangular',
+            'Interna', 'Descentralizada',
+        ];
+
+        $flujoData = $proyectosQuery
+            ->groupBy('flujo_direccion')
+            ->selectRaw('flujo_direccion, count(*) as total')
+            ->pluck('total', 'flujo_direccion')
+            ->toArray();
+
+        $flujos = collect($flujosPosibles)->mapWithKeys(
+            fn($f) => [$f => $flujoData[$f] ?? 0]
+        )->toArray();
+
+        // ── Sectores temáticos (top 3) ───────────────
+        $sectoresTop = $proyectosQuery
+            ->groupBy('sector_tematico')
+            ->selectRaw('sector_tematico, count(*) as total')
+            ->orderByRaw('count(*) desc')
+            ->limit(3)
+            ->get(['sector_tematico', 'total'])
+            ->map(fn($s) => [
+                'sector' => $s->sector_tematico,
+                'total'  => (int) $s->total,
+            ]);
+
+        // ── Formatear monto ──────────────────────────
+        $montoFormateado = $this->formatearMontoComparador(
+            (float) $montoTotal
+        );
+
+        return [
+            'id'      => $provincia->id,
+            'nombre'  => $provincia->nombre,
+            'codigo'  => $provincia->codigo,
+            'capital' => $provincia->capital,
+
+            'proyectos' => [
+                'total'       => $totalProyectos,
+                'en_gestion'  =>
+                    (int) ($proyectosPorEstado['En gestión']
+                    ?? 0),
+                'en_ejecucion'=>
+                    (int) ($proyectosPorEstado['En ejecución']
+                    ?? 0),
+                'finalizado'  =>
+                    (int) ($proyectosPorEstado['Finalizado']
+                    ?? 0),
+                'suspendido'  =>
+                    (int) ($proyectosPorEstado['Suspendido']
+                    ?? 0),
+            ],
+
+            'monto_total'      => (float) $montoTotal,
+            'monto_formateado' => $montoFormateado,
+
+            'ods_top'           => $odsTop->toArray(),
+            'actores_count'     => $actoresCount,
+            'emblematicos_count'=> $emblematicosCount,
+            'practicas_count'   => $practicasCount,
+            'flujos'            => $flujos,
+            'sectores_top'      => $sectoresTop->toArray(),
+        ];
+    }
+
+    /**
+     * Formatea un monto para el comparador.
+     * Usa sufijos K/M para montos grandes.
+     */
+    private function formatearMontoComparador(
+        float $monto
+    ): string {
+        if ($monto === 0.0) return '$0 USD';
+        if ($monto >= 1_000_000) {
+            return '$' .
+                number_format($monto / 1_000_000, 1) .
+                'M USD';
+        }
+        if ($monto >= 1_000) {
+            return '$' .
+                number_format($monto / 1_000, 1) .
+                'K USD';
+        }
+        return '$' .
+            number_format($monto, 0, '.', ',') .
+            ' USD';
+    }
 }
