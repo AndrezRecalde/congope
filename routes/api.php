@@ -27,6 +27,7 @@ Route::prefix('v1')->group(function () {
         Route::get('emblematicos', [PublicoController::class, 'emblematicos'])->name('emblematicos');
         Route::get('buenas-practicas', [PublicoController::class, 'buenasPracticas'])->name('buenas-practicas');
         Route::get('comparar', [PublicoController::class, 'compararProvincias'])->name('comparar');
+        Route::get('mapa-calor-ods', [PublicoController::class, 'mapaCalorOds'])->name('mapa-calor-ods');
 
         // Catalogo Ubicaciones
         Route::get('provincias', [\App\Http\Controllers\Api\V1\ProvinciaController::class, 'index'])->name('provincias.index');

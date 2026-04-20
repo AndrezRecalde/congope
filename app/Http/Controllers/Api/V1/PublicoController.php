@@ -996,4 +996,70 @@ class PublicoController extends ApiController
             number_format($monto, 0, '.', ',') .
             ' USD';
     }
+
+    /**
+     * GET /api/v1/publico/mapa-calor-ods
+     *
+     * Matriz de proyectos por ODS × Provincia.
+     * 17 ODS × 24 provincias = 408 celdas.
+     *
+     * Endpoint público. Sin autenticación.
+     * Cacheado 30 minutos — los datos cambian poco.
+     */
+    public function mapaCalorOds(): JsonResponse
+    {
+        $data = Cache::remember(
+            'portal.mapa_calor_ods',
+            now()->addMinutes(30),
+            function () {
+                // ── 1. Cargar los 17 ODS ordenados ──
+                $ods = Ods::orderBy('numero')
+                    ->get(['id', 'numero', 'nombre', 'color_hex']);
+
+                // ── 2. Cargar las 24 provincias ──
+                $provincias = Provincia::orderBy('codigo')
+                    ->get(['id', 'nombre', 'codigo']);
+
+                // ── 3. Query de cruce en una sola
+                //       consulta SQL eficiente ──────
+                $celdas = DB::table('proyectos as p')
+                    ->join(
+                        'proyecto_ods as po',
+                        'po.proyecto_id', '=', 'p.id'
+                    )
+                    ->join(
+                        'proyecto_provincia as pp',
+                        'pp.proyecto_id', '=', 'p.id'
+                    )
+                    ->whereNull('p.deleted_at')
+                    ->select([
+                        'po.ods_id as ods_id',
+                        'pp.provincia_id as provincia_id',
+                        DB::raw('COUNT(DISTINCT p.id) as total'),
+                    ])
+                    ->groupBy('po.ods_id', 'pp.provincia_id')
+                    ->having(DB::raw('COUNT(DISTINCT p.id)'), '>', 0)
+                    ->get();
+
+                $maxValor = $celdas->max('total') ?? 0;
+
+                return [
+                    'ods'        => $ods,
+                    'provincias' => $provincias,
+                    'matriz'     => $celdas->map(fn($c) => [
+                        'ods_id'       => (int) $c->ods_id,
+                        'provincia_id' => $c->provincia_id,
+                        'total'        => (int) $c->total,
+                    ]),
+                    'max_valor'  => (int) $maxValor,
+                ];
+            }
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mapa de calor ODS obtenido',
+            'data'    => $data,
+        ]);
+    }
 }
