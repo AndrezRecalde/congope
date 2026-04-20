@@ -111,6 +111,7 @@ class PublicoController extends ApiController
             'provincia_id' => ['nullable', 'uuid', 'exists:provincias,id'],
             'canton_id' => ['nullable', 'uuid', 'exists:cantones,id'],
             'actor_id' => ['nullable', 'uuid', 'exists:actores_cooperacion,id'],
+            'search' => ['nullable', 'string', 'max:150'],
         ]);
 
         $provinciaId = $request->provincia_id;
@@ -152,6 +153,20 @@ class PublicoController extends ApiController
 
         if ($actorId) {
             $queryProyectos->whereHas('actores', fn($q) => $q->where('actores_cooperacion.id', $actorId));
+        }
+
+        // ── Filtro de búsqueda por texto ─────────────
+        // Busca en nombre, código y sector temático
+        // del proyecto. Case-insensitive con LIKE.
+        // Solo se aplica si search tiene contenido
+        // (no vacío y no solo espacios).
+        if (!empty(trim($request->search ?? ''))) {
+            $search = '%' . trim($request->search) . '%';
+            $queryProyectos->where(function ($q) use ($search) {
+                $q->where('nombre', 'like', $search)
+                  ->orWhere('codigo', 'like', $search)
+                  ->orWhere('sector_tematico', 'like', $search);
+            });
         }
 
         $proyectos = $queryProyectos
@@ -253,6 +268,7 @@ class PublicoController extends ApiController
             'total_emblematicos' => $emblematicos->count(),
             'total_buenas_practicas' => $practicas->count(),
             'provincia_resaltada' => $provinciaId ?? $provinciaInferida,
+            'search_aplicado' => trim($request->search ?? '') ?: null,
         ];
 
         return response()->json([
