@@ -41,7 +41,7 @@ class ProyectosExport implements WithMultipleSheets
         ];
     }
 
-    private function cargarProyectos(): Collection
+    public function cargarProyectos(): Collection
     {
         $query = Proyecto::query()
             ->with([

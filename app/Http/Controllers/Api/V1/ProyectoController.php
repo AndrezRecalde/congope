@@ -10,6 +10,7 @@ use App\Http\Requests\Proyecto\UpdateProyectoRequest;
 use App\Http\Resources\ProyectoResource;
 use App\Exports\ProyectosExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\JsonResponse;
@@ -101,7 +102,7 @@ class ProyectoController extends ApiController
      *
      * Permiso requerido: proyectos.exportar
      */
-    public function exportar(Request $request): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    public function exportar(Request $request)
     {
         Gate::authorize('exportar', Proyecto::class);
 
@@ -116,8 +117,34 @@ class ProyectoController extends ApiController
             'search'           => $request->search,
         ]);
 
+        $format = strtolower($request->query('format', 'excel'));
+
         // Nombre del archivo con fecha actual
         $fecha    = now()->format('Y-m-d');
+
+        if ($format === 'pdf') {
+            $filename = "proyectos-congope-{$fecha}.pdf";
+            
+            // Reutilizamos el query de filtrado de la exportación a Excel
+            $proyectos = (new ProyectosExport($filtros))->cargarProyectos();
+            
+            $pdf = Pdf::loadView('exports.proyectos_pdf', [
+                'proyectos' => $proyectos,
+                'filtros'   => $filtros
+            ])->setPaper('A4', 'landscape');
+            
+            return $pdf->download($filename);
+        } elseif ($format === 'csv') {
+            $filename = "proyectos-congope-{$fecha}.csv";
+            return Excel::download(
+                new ProyectosExport($filtros),
+                $filename,
+                \Maatwebsite\Excel\Excel::CSV,
+                ['Content-Type' => 'text/csv']
+            );
+        }
+
+        // Por defecto, exportar a Excel
         $filename = "proyectos-congope-{$fecha}.xlsx";
 
         return Excel::download(
