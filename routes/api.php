@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\V1\PublicoController;
+use App\Http\Controllers\Api\BackupController;
 
 Route::prefix('v1')->group(function () {
 
@@ -140,6 +141,14 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\DashboardController::class, 'index'])->name('index');
             Route::get('grafica-anual', [\App\Http\Controllers\Api\V1\DashboardController::class, 'graficaAnual'])->name('grafica-anual');
             Route::get('grafica-ods', [\App\Http\Controllers\Api\V1\DashboardController::class, 'graficaOds'])->name('grafica-ods');
+        });
+
+        // Backups - solo super_admin
+        Route::prefix('sistema')->name('sistema.')->group(function () {
+            Route::get('backups', [BackupController::class, 'index'])->name('backups.index');
+            Route::post('backups', [BackupController::class, 'store'])->name('backups.store');
+            Route::get('backups/{archivo}/descargar', [BackupController::class, 'descargar'])->name('backups.descargar');
+            Route::delete('backups/{archivo}', [BackupController::class, 'destroy'])->name('backups.destroy');
         });
 
         // Reportes

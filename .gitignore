@@ -24,3 +24,7 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 AGENT_CONTEXT.md
+
+# Backups de base de datos
+storage/app/backups/
+*.sql
