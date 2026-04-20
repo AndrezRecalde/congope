@@ -46,11 +46,15 @@ Route::prefix('v1')->group(function () {
         Route::get('auditoria', [\App\Http\Controllers\Api\V1\UsuarioController::class, 'auditoria'])->name('auditoria.index');
 
         // Provincias (catálogo, solo lectura + consultas)
+        Route::get('provincias', [\App\Http\Controllers\Api\V1\ProvinciaController::class, 'index'])->name('provincias.index');
         Route::get('provincias/{provincia}', [\App\Http\Controllers\Api\V1\ProvinciaController::class, 'show'])->name('provincias.show');
+        Route::put('provincias/{id}', [\App\Http\Controllers\Api\V1\ProvinciaController::class, 'update'])->name('provincias.update')->middleware('role:super_admin');
         Route::get('provincias/{provincia}/usuarios', [\App\Http\Controllers\Api\V1\ProvinciaController::class, 'usuariosAsignados'])->name('provincias.usuarios');
 
         // Cantones y Parroquias
-        Route::apiResource('cantones', \App\Http\Controllers\Api\V1\CantonController::class)->parameters(['cantones' => 'cantone']);
+        Route::get('cantones', [\App\Http\Controllers\Api\V1\CantonController::class, 'index'])->name('cantones.index');
+        Route::get('cantones/{id}', [\App\Http\Controllers\Api\V1\CantonController::class, 'show'])->name('cantones.show');
+        Route::put('cantones/{id}', [\App\Http\Controllers\Api\V1\CantonController::class, 'update'])->name('cantones.update')->middleware('role:super_admin');
         Route::apiResource('parroquias', \App\Http\Controllers\Api\V1\ParroquiaController::class);
 
         // ODS (catálogo, solo lectura)

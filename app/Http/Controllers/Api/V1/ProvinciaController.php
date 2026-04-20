@@ -17,7 +17,7 @@ class ProvinciaController extends ApiController
     {
         $provincias = Provincia::query()
             ->when($request->search, fn($q) => $q->where('nombre', 'ilike', "%{$request->search}%"))
-            ->orderBy('nombre', 'asc')
+            ->orderBy('codigo', 'asc')
             ->get(['id', 'nombre', 'codigo', 'capital']);
 
         return $this->respondSuccess(
@@ -51,5 +51,45 @@ class ProvinciaController extends ApiController
             UsuarioResource::collection($usuarios),
             'Usuarios de la provincia'
         );
+    }
+
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $provincia = Provincia::findOrFail($id);
+
+        $validated = $request->validate([
+            'nombre' => [
+                'sometimes',
+                'string',
+                'max:100',
+                'unique:provincias,nombre,' . $id,
+            ],
+            'capital' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:100',
+            ],
+        ], [
+            'nombre.unique' => 'Ya existe una provincia con ese nombre.',
+            'nombre.max' => 'El nombre no puede superar 100 caracteres.',
+            'capital.max' => 'La capital no puede superar 100 caracteres.',
+        ]);
+
+        $provincia->update($validated);
+
+        \Illuminate\Support\Facades\Cache::forget('provincias.todas');
+        \Illuminate\Support\Facades\Cache::forget('portal.mapa.catalogos');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Provincia actualizada correctamente',
+            'data' => [
+                'id' => $provincia->id,
+                'nombre' => $provincia->nombre,
+                'codigo' => $provincia->codigo,
+                'capital' => $provincia->capital,
+            ],
+        ]);
     }
 }
