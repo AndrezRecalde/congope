@@ -1044,13 +1044,13 @@ class PublicoController extends ApiController
                 $maxValor = $celdas->max('total') ?? 0;
 
                 return [
-                    'ods'        => $ods,
-                    'provincias' => $provincias,
+                    'ods'        => $ods->toArray(),
+                    'provincias' => $provincias->toArray(),
                     'matriz'     => $celdas->map(fn($c) => [
                         'ods_id'       => (int) $c->ods_id,
                         'provincia_id' => $c->provincia_id,
                         'total'        => (int) $c->total,
-                    ]),
+                    ])->toArray(),
                     'max_valor'  => (int) $maxValor,
                 ];
             }
