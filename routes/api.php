@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\V1\PublicoController;
 use App\Http\Controllers\Api\BackupController;
+use App\Http\Controllers\Api\RedCooperacionController;
 
 Route::prefix('v1')->group(function () {
 
@@ -160,6 +161,11 @@ Route::prefix('v1')->group(function () {
             Route::post('cooperante', [\App\Http\Controllers\Api\V1\ReporteController::class, 'cooperante'])->name('cooperante');
             Route::post('anual', [\App\Http\Controllers\Api\V1\ReporteController::class, 'anual'])->name('anual');
             Route::post('global', [\App\Http\Controllers\Api\V1\ReporteController::class, 'global'])->name('global');
+        });
+
+        // Análisis de Red
+        Route::prefix('analisis')->name('analisis.')->group(function () {
+            Route::get('red-cooperacion', [RedCooperacionController::class, 'index'])->name('red-cooperacion');
         });
 
     });
