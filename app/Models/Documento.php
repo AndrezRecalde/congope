@@ -6,8 +6,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
+
 #[Table('documentos')]
-#[Fillable('documentable_type', 'documentable_id', 'titulo', 'categoria', 'ruta_archivo', 'nombre_archivo', 'mime_type', 'tamano_bytes', 'version', 'es_publico', 'fecha_vencimiento', 'subido_por', 'provincia_id')]
+#[Fillable('documentable_type', 'documentable_id', 'titulo', 'categoria', 'ruta_archivo', 'nombre_archivo', 'mime_type', 'tamano_bytes', 'version', 'es_publico', 'fecha_vencimiento', 'subido_por', 'provincia_id', 'documento_padre_id', 'version_activa')]
 class Documento extends BaseModel
 {
     protected function casts(): array
@@ -17,6 +21,8 @@ class Documento extends BaseModel
             'tamano_bytes' => 'integer',
             'version' => 'integer',
             'fecha_vencimiento' => 'date',
+            'version_activa' => 'boolean',
+            'documento_padre_id' => 'string',
         ];
     }
     use SoftDeletes;
@@ -54,5 +60,32 @@ class Documento extends BaseModel
     public function scopePorCategoria($query, string $categoria)
     {
         return $query->where('categoria', $categoria);
+    }
+
+    /**
+     * El documento padre (versión original v1).
+     * Solo existe en v2+.
+     */
+    public function padre(): BelongsTo
+    {
+        return $this->belongsTo(Documento::class, 'documento_padre_id');
+    }
+
+    /**
+     * Todas las versiones de este documento.
+     * Funciona en el documento padre (v1).
+     */
+    public function versiones(): HasMany
+    {
+        return $this->hasMany(Documento::class, 'documento_padre_id')->orderBy('version');
+    }
+
+    /**
+     * Scope: solo documentos activos (versión
+     * más reciente) o sin versiones anteriores.
+     */
+    public function scopeActivos(Builder $query): Builder
+    {
+        return $query->where('version_activa', true);
     }
 }

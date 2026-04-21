@@ -31,6 +31,8 @@ class DocumentoResource extends JsonResource
             }),
             'provincia_id' => $this->provincia_id,
             'version' => $this->version,
+            'version_activa' => (bool)$this->version_activa,
+            'documento_padre_id' => $this->documento_padre_id,
             'subido_por' => new UserResumenResource($this->whenLoaded('subidoPor')),
             'dias_para_vencer' => $diasVencimiento !== null && $diasVencimiento > 0 ? (int)$diasVencimiento : 0,
             'vencido' => $diasVencimiento !== null && $diasVencimiento < 0,

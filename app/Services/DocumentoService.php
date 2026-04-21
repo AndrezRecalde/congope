@@ -62,6 +62,8 @@ class DocumentoService
                 ->where('documentable_id', $entidad->id);
         }
 
+        $query->activos();
+
         if (!$usuario || !$usuario->can('documentos.ver_confidencial')) {
             $query->where(function ($q) use ($usuario) {
                 $q->where('es_publico', true);
@@ -84,7 +86,7 @@ class DocumentoService
         $query = Documento::where('documentable_type', get_class($entidad))
             ->where('documentable_id', $entidad->id);
 
-        return $query->publicos()->orderBy('created_at', 'desc')->get();
+        return $query->activos()->publicos()->orderBy('created_at', 'desc')->get();
     }
 
     /**

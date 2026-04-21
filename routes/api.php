@@ -118,6 +118,8 @@ Route::prefix('v1')->group(function () {
         Route::delete('documentos/{documento}', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'destroy'])->name('documentos.destroy');
         Route::get('documentos/{documento}/descargar', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'descargar'])->name('documentos.descargar');
         Route::patch('documentos/{documento}/publicar', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'publicar'])->name('documentos.publicar');
+        Route::get('documentos/{id}/versiones', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'listarVersiones'])->name('documentos.versiones');
+        Route::post('documentos/{id}/versiones', [\App\Http\Controllers\Api\V1\DocumentoController::class, 'subirVersion'])->name('documentos.subir-version');
 
         // Eventos
         Route::apiResource('eventos', \App\Http\Controllers\Api\V1\EventoController::class);
