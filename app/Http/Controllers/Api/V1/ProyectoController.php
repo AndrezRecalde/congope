@@ -26,8 +26,13 @@ class ProyectoController extends ApiController
     {
         Gate::authorize('viewAny', Proyecto::class);
 
-        $filtros = $request->only(['search', 'estado', 'actor_id']);
-        $proyectos = $this->service->listar($filtros, $request->user());
+        $filtros = $request->only([
+            'search', 'estado', 'actor_id', 
+            'provincia_id', 'sector_tematico', 'flujo_direccion'
+        ]);
+        $perPage = $request->integer('per_page', 15);
+        
+        $proyectos = $this->service->listar($filtros, $request->user(), $perPage);
 
         return $this->respondPaginated(ProyectoResource::collection($proyectos), 'Proyectos listados correctamente');
     }
@@ -79,6 +84,79 @@ class ProyectoController extends ApiController
         $this->service->cambiarEstado($proyecto, $request->estado);
 
         return $this->respondSuccess(new ProyectoResource($proyecto), 'Estado del proyecto cambiado exitosamente');
+    }
+
+    /**
+     * GET /api/v1/proyectos/conteos
+     *
+     * Devuelve el total de proyectos por estado.
+     * Respeta los mismos filtros que el listado.
+     * Usado por el Kanban para mostrar contadores
+     * en las cabeceras de columna.
+     */
+    public function conteos(Request $request): JsonResponse
+    {
+        $estados = [
+            'En gestión',
+            'En ejecución',
+            'Finalizado',
+            'Suspendido',
+        ];
+
+        // Query base con los mismos filtros que el método index() (excepto estado)
+        $queryBase = Proyecto::query()->whereNull('deleted_at');
+        $usuario = $request->user();
+
+        // Scope de permisos
+        if (!$usuario->can('proyectos.ver_todas_provincias')) {
+            $provinciaIds = $usuario->provincias()->pluck('provincias.id');
+            $queryBase->whereHas('provincias', function ($q) use ($provinciaIds) {
+                $q->whereIn('provincias.id', $provinciaIds);
+            });
+        }
+
+        if ($request->filled('provincia_id')) {
+            $queryBase->whereHas('provincias', fn($q) => $q->where('provincias.id', $request->provincia_id));
+        }
+
+        if ($request->filled('actor_id')) {
+            $queryBase->whereHas('actores', fn($q) => $q->where('actores_cooperacion.id', $request->actor_id));
+        }
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $queryBase->where(function ($q) use ($s) {
+                $q->where('nombre', 'like', "%$s%")
+                  ->orWhere('codigo', 'like', "%$s%");
+            });
+        }
+
+        if ($request->filled('sector_tematico')) {
+            $queryBase->where('sector_tematico', 'like', '%' . $request->sector_tematico . '%');
+        }
+
+        if ($request->filled('flujo_direccion')) {
+            $queryBase->where('flujo_direccion', $request->flujo_direccion);
+        }
+
+        $conteosPorEstado = (clone $queryBase)
+            ->selectRaw('estado, COUNT(*) as total')
+            ->groupBy('estado')
+            ->pluck('total', 'estado')
+            ->toArray();
+
+        $resultado = [];
+        foreach ($estados as $estado) {
+            $resultado[$estado] = $conteosPorEstado[$estado] ?? 0;
+        }
+
+        $resultado['total'] = array_sum($resultado);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Conteos por estado',
+            'data'    => $resultado,
+        ]);
     }
 
     /**

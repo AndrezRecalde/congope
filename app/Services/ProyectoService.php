@@ -11,7 +11,7 @@ use Illuminate\Http\Response;
 
 class ProyectoService
 {
-    public function listar(array $filtros, $usuario): LengthAwarePaginator
+    public function listar(array $filtros, $usuario, int $perPage = 15): LengthAwarePaginator
     {
         $query = Proyecto::with(['provincias', 'ods', 'actores', 'beneficiarios.categoria', 'beneficiarios.provincia']);
 
@@ -23,12 +23,21 @@ class ProyectoService
         }
 
         if (!empty($filtros['search'])) {
-            $query->where('nombre', 'LIKE', '%' . $filtros['search'] . '%')
-                  ->orWhere('codigo', 'LIKE', '%' . $filtros['search'] . '%');
+            $s = $filtros['search'];
+            $query->where(function ($q) use ($s) {
+                $q->where('nombre', 'LIKE', '%' . $s . '%')
+                  ->orWhere('codigo', 'LIKE', '%' . $s . '%');
+            });
         }
 
         if (!empty($filtros['estado'])) {
-            $query->estado($filtros['estado']);
+            $query->where('estado', $filtros['estado']);
+        }
+
+        if (!empty($filtros['provincia_id'])) {
+            $query->whereHas('provincias', function ($q) use ($filtros) {
+                $q->where('provincias.id', $filtros['provincia_id']);
+            });
         }
 
         if (!empty($filtros['actor_id'])) {
@@ -37,7 +46,17 @@ class ProyectoService
             });
         }
 
-        return $query->paginate(15);
+        if (!empty($filtros['sector_tematico'])) {
+            $query->where('sector_tematico', 'like', '%' . $filtros['sector_tematico'] . '%');
+        }
+
+        if (!empty($filtros['flujo_direccion'])) {
+            $query->where('flujo_direccion', $filtros['flujo_direccion']);
+        }
+
+        $query->orderByDesc('created_at');
+
+        return $query->paginate($perPage);
     }
 
     public function obtener(string $id, $usuario): Proyecto

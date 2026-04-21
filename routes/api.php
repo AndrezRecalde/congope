@@ -72,6 +72,7 @@ Route::prefix('v1')->group(function () {
 
         // Proyectos
         Route::get('proyectos/exportar', [\App\Http\Controllers\Api\V1\ProyectoController::class, 'exportar'])->name('proyectos.exportar');
+        Route::get('proyectos/conteos', [\App\Http\Controllers\Api\V1\ProyectoController::class, 'conteos'])->name('proyectos.conteos');
         Route::get('proyectos/{id}/historial', [\App\Http\Controllers\Api\V1\ProyectoController::class, 'historial'])->name('proyectos.historial');
         Route::patch('proyectos/{proyecto}/estado', [\App\Http\Controllers\Api\V1\ProyectoController::class, 'cambiarEstado'])->name('proyectos.cambiar_estado');
         Route::apiResource('proyectos', \App\Http\Controllers\Api\V1\ProyectoController::class);
