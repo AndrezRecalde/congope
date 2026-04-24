@@ -42,6 +42,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'mapa' => ['ver', 'ver_todas_capas', 'exportar'],
             'dashboard' => ['ver', 'ver_global'],
             'reportes' => ['generar', 'exportar_masivo'],
+            'analisis' => ['ver', 'ver_global', 'exportar'],
             'categorias_beneficiarios' => ['ver', 'crear', 'editar', 'eliminar'],
         ];
 
@@ -90,6 +91,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'categorias_beneficiarios.crear',
             'categorias_beneficiarios.editar',
             'categorias_beneficiarios.eliminar',
+            // Análisis: admin_provincial no tiene vista global
+            'analisis.ver_global',
         ];
 
         $adminProvincial = Role::where('name', 'admin_provincial')->first();
@@ -131,6 +134,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'reportes.generar',
             'usuarios.ver',
             'categorias_beneficiarios.ver',
+            // Análisis de Red
+            'analisis.ver',
         ]);
 
         $visualizador = Role::where('name', 'visualizador')->first();
@@ -151,7 +156,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'mapa.exportar',
             'dashboard.ver',
             'dashboard.ver_global',
-            'reportes.generar'
+            'reportes.generar',
+            // Análisis de Red
+            'analisis.ver',
         ]);
 
         $publico = Role::where('name', 'publico')->first();
