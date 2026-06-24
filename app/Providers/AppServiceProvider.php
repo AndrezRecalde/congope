@@ -43,5 +43,17 @@ class AppServiceProvider extends ServiceProvider
                 $modelo::observe(\App\Observers\AuditoriaObserver::class);
             }
         }
+
+        if (class_exists(\Knuckles\Scribe\Scribe::class)) {
+            \Knuckles\Scribe\Scribe::beforeResponseCall(function (\Illuminate\Http\Request $request, $extEndpointData) {
+                // Autenticar a Scribe como Admin para evitar errores 401
+                $user = \App\Models\User::where('email', 'admin@congope.gob.ec')->first();
+                if ($user) {
+                    $request->setUserResolver(fn() => $user);
+                    auth()->setUser($user);
+                    auth('sanctum')->setUser($user);
+                }
+            });
+        }
     }
 }

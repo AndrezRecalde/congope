@@ -1,11 +1,12 @@
 <?php
-$json = file_get_contents('https://raw.githubusercontent.com/IderDelgado/provincias-cantones-parroquias-del-ecuador/master/ecuador.json');
-$data = json_decode($json, true);
-$firstProvince = array_key_first($data);
-echo "Primer elemento: " . $firstProvince . "\n";
-print_r(array_keys($data[$firstProvince]));
-if (isset($data[$firstProvince]['cantones'])) {
-    $firstCanton = array_key_first($data[$firstProvince]['cantones']);
-    echo "Cantones keys:\n";
-    print_r(array_keys($data[$firstProvince]['cantones'][$firstCanton]));
+require 'vendor/autoload.php';
+$app = require 'bootstrap/app.php';
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel->bootstrap();
+
+$user = App\Models\User::where('email', 'admin@congope.gob.ec')->first();
+if ($user) {
+    echo $user->createToken('scribe')->plainTextToken;
+} else {
+    echo "USER_NOT_FOUND";
 }
